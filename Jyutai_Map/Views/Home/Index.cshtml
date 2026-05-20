@@ -6,6 +6,9 @@
 <div class="text-center">
     <h1 class="display-4">現在の渋滞状況</h1>
     <p>リアルタイムの交通レポートを表示しています。</p>
+    <p>
+        <a asp-action="Create" class="btn btn-primary">新規報告を作成</a>
+    </p>
 </div>
 
 <div class="container mt-4">
@@ -16,6 +19,7 @@
                 <th>混雑レベル (1-5)</th>
                 <th>詳細説明</th>
                 <th>報告日時</th>
+                <th>操作</th>
             </tr>
         </thead>
         <tbody>
@@ -32,13 +36,17 @@
                         </td>
                         <td>@report.Description</td>
                         <td>@report.ReportedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@report.Id" class="btn btn-sm btn-outline-primary">編集</a>
+                            <a asp-action="Delete" asp-route-id="@report.Id" class="btn btn-sm btn-outline-danger">削除</a>
+                        </td>
                     </tr>
                 }
             }
             else
             {
                 <tr>
-                    <td colspan="4" class="text-center">レポートがありません。</td>
+                    <td colspan="5" class="text-center">レポートがありません。</td>
                 </tr>
             }
         </tbody>

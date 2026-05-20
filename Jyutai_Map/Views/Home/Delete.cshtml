@@ -1,0 +1,45 @@
+@model Jyutai_Map.Models.TrafficReport
+
+@{
+    ViewData["Title"] = "報告削除";
+}
+
+<h1>報告削除</h1>
+
+<h3>この報告を削除してもよろしいですか？</h3>
+<div>
+    <h4>渋滞レポート</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            場所
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Location)
+        </dd>
+        <dt class="col-sm-2">
+            混雑レベル
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.CongestionLevel)
+        </dd>
+        <dt class="col-sm-2">
+            詳細説明
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Description)
+        </dd>
+        <dt class="col-sm-2">
+            報告日時
+        </dt>
+        <dd class="col-sm-10">
+            @Model.ReportedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")
+        </dd>
+    </dl>
+    
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <input type="submit" value="削除" class="btn btn-danger" /> |
+        <a asp-action="Index" class="btn btn-secondary">一覧に戻る</a>
+    </form>
+</div>

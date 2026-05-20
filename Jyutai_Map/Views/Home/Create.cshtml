@@ -1,0 +1,40 @@
+@model Jyutai_Map.Models.TrafficReport
+
+@{
+    ViewData["Title"] = "新規報告作成";
+}
+
+<h1>新規報告作成</h1>
+
+<h4>渋滞レポート</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group mb-3">
+                <label asp-for="Location" class="control-label">場所</label>
+                <input asp-for="Location" class="form-control" />
+                <span asp-validation-for="Location" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="CongestionLevel" class="control-label">混雑レベル (1-5)</label>
+                <input asp-for="CongestionLevel" class="form-control" type="number" min="1" max="5" />
+                <span asp-validation-for="CongestionLevel" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="Description" class="control-label">詳細説明</label>
+                <textarea asp-for="Description" class="form-control"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <input type="submit" value="作成" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary">一覧に戻る</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
