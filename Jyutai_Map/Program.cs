@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace Jyutai_Map
 {
     public class Program
@@ -7,6 +9,10 @@ namespace Jyutai_Map
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            builder.Services.AddDbContext<Jyutai_Map.Data.ApplicationDbContext>(options =>
+                options.UseNpgsql(connectionString));
+
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();
@@ -19,6 +25,22 @@ namespace Jyutai_Map
             app.UseRouting();
 
             app.UseAuthorization();
+
+            // Seed the database
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                try
+                {
+                    var context = services.GetRequiredService<Jyutai_Map.Data.ApplicationDbContext>();
+                    Jyutai_Map.Data.DbInitializer.Initialize(context);
+                }
+                catch (Exception ex)
+                {
+                    var logger = services.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ex, "An error occurred while seeding the database.");
+                }
+            }
 
             app.MapStaticAssets();
             app.MapControllerRoute(

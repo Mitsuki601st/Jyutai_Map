@@ -1,8 +1,46 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model IEnumerable<Jyutai_Map.Models.TrafficReport>
+@{
+    ViewData["Title"] = "渋滞状況一覧";
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <h1 class="display-4">現在の渋滞状況</h1>
+    <p>リアルタイムの交通レポートを表示しています。</p>
+</div>
+
+<div class="container mt-4">
+    <table class="table table-striped table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>場所</th>
+                <th>混雑レベル (1-5)</th>
+                <th>詳細説明</th>
+                <th>報告日時</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var report in Model)
+                {
+                    <tr>
+                        <td>@report.Location</td>
+                        <td>
+                            <span class="badge @(report.CongestionLevel >= 4 ? "bg-danger" : report.CongestionLevel >= 3 ? "bg-warning text-dark" : "bg-success")">
+                                @report.CongestionLevel
+                            </span>
+                        </td>
+                        <td>@report.Description</td>
+                        <td>@report.ReportedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="4" class="text-center">レポートがありません。</td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>

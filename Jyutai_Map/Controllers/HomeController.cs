@@ -6,9 +6,17 @@ namespace Jyutai_Map.Controllers
 {
     public class HomeController : Controller
     {
+        private readonly Data.ApplicationDbContext _context;
+
+        public HomeController(Data.ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
         public IActionResult Index()
         {
-            return View();
+            var reports = _context.TrafficReports.OrderByDescending(r => r.ReportedAt).ToList();
+            return View(reports);
         }
 
         public IActionResult Privacy()
