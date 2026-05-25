@@ -26,6 +26,8 @@ namespace Jyutai_Map
 
             app.UseAuthorization();
 
+            app.UseStaticFiles();
+
             // Seed the database
             using (var scope = app.Services.CreateScope())
             {

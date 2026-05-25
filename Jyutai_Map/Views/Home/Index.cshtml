@@ -51,4 +51,27 @@
             }
         </tbody>
     </table>
+
+    <div id="map" style="width: 100%; height: 600px; margin-top: 20px;"></div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        // ③ 地図の初期化（[緯度, 経度], ズームレベル）※例として東京駅付近
+        const map = L.map('map').setView([26.2064, 127.6465], 13);
+
+        // ④ OpenStreetMap のタイルレイヤー（API）を追加
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // ⑤ オプション: マーカーを配置する
+            const marker = L.marker([26.2064, 127.6465]).addTo(map);
+        marker.bindPopup("<b>はいさい！</b><br>ここが那覇空港です。").openPopup();
+    </script>
+    }
 </div>
