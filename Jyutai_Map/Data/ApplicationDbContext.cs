@@ -11,5 +11,6 @@ namespace Jyutai_Map.Data
         }
 
         public DbSet<TrafficReport> TrafficReports { get; set; } = null!;
+        public DbSet<TrafficSurvey> TrafficSurveys { get; set; } = null!;
     }
 }

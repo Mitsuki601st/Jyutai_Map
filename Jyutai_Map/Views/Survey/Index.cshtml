@@ -1,0 +1,54 @@
+@model IEnumerable<Jyutai_Map.Models.TrafficSurvey>
+
+@{
+    ViewData["Title"] = "アンケート一覧";
+}
+
+<h1>アンケート一覧</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">新しくアンケートを記入する</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Rating)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Comment)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.CreatedAt)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @for (int i = 0; i < item.Rating; i++)
+                {
+                    <span class="text-warning">★</span>
+                }
+                @for (int i = item.Rating; i < 5; i++)
+                {
+                    <span class="text-muted">★</span>
+                }
+                (@item.Rating)
+            </td>
+            <td style="word-break: break-all; max-width: 400px;">
+                @Html.DisplayFor(modelItem => item.Comment)
+            </td>
+            <td>
+                @item.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id">編集</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">削除</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
