@@ -1,5 +1,6 @@
 using Jyutai_Map.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using System.Diagnostics;
 
 namespace Jyutai_Map.Controllers
@@ -7,14 +8,17 @@ namespace Jyutai_Map.Controllers
     public class HomeController : Controller
     {
         private readonly Data.ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public HomeController(Data.ApplicationDbContext context)
+        public HomeController(Data.ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         public IActionResult Index()
         {
+            ViewBag.GoogleMapsKey = _configuration["ApiKeys:GoogleMaps"];
             var reports = _context.TrafficReports.OrderByDescending(r => r.ReportedAt).ToList();
             return View(reports);
         }

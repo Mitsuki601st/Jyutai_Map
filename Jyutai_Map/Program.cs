@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Jyutai_Map.Services;
 
 namespace Jyutai_Map
 {
@@ -12,6 +13,9 @@ namespace Jyutai_Map
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<Jyutai_Map.Data.ApplicationDbContext>(options =>
                 options.UseNpgsql(connectionString));
+
+            builder.Services.AddHttpClient<WeatherService>();
+            builder.Services.AddHttpClient<GeminiService>();
 
             builder.Services.AddControllersWithViews();
 
