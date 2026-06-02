@@ -19,9 +19,9 @@ namespace Jyutai_Map.Services
         public async Task<string> ChatAsync(string message)
         {
             if (string.IsNullOrEmpty(_apiKey) || _apiKey == "YOUR_GEMINI_API_KEY")
-                return "Gemini APIキーが設定されていません。";
+                return "Gemini APIキーが正しく読み込まれていないか、プレースホルダーのままです。appsettings.jsonを確認してください。";
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={_apiKey}";
+            var url = $"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key={_apiKey}";
             
             var payload = new
             {
@@ -36,22 +36,30 @@ namespace Jyutai_Map.Services
             try
             {
                 var response = await _httpClient.PostAsync(url, content);
-                response.EnsureSuccessStatusCode();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return $"APIエラーが発生しました (Status: {response.StatusCode}): {errorContent}";
+                }
                 
                 var jsonResponse = await response.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(jsonResponse);
-                var text = doc.RootElement
-                    .GetProperty("candidates")[0]
-                    .GetProperty("content")
-                    .GetProperty("parts")[0]
-                    .GetProperty("text")
-                    .GetString();
-
-                return text ?? "回答が得られませんでした。";
+                
+                if (doc.RootElement.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
+                {
+                    return candidates[0]
+                        .GetProperty("content")
+                        .GetProperty("parts")[0]
+                        .GetProperty("text")
+                        .GetString() ?? "回答が空でした。";
+                }
+                
+                return "有効な回答が得られませんでした。APIキーやリクエスト内容を確認してください。";
             }
             catch (Exception ex)
             {
-                return $"エラーが発生しました: {ex.Message}";
+                return $"通信エラーが発生しました: {ex.Message}";
             }
         }
     }
