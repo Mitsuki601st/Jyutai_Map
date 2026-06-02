@@ -1,20 +1,21 @@
 @model IEnumerable<Jyutai_Map.Models.TrafficReport>
 @{
     ViewData["Title"] = "Smart Traffic & Tourism Dashboard";
-    var googleMapsKey = ViewBag.GoogleMapsKey;
+    var googleMapsKey = ViewData["GoogleMapsApiKey"];
 }
 
 <div class="dashboard-wrapper">
     <!-- Sidebar -->
     <aside class="sidebar-modern">
-        <div class="sidebar-header">
-            <h4 class="m-0"><i class="bi bi-map-fill me-2"></i>Saigon District 1</h4>
+        <div class="sidebar-header d-flex justify-content-between align-items-center">
+            <h4 class="m-0"><i class="bi bi-map-fill me-2"></i><span data-t="location">Saigon District 1</span></h4>
+            <button class="btn btn-sm btn-outline-light" onclick="toggleLanguage()" id="lang-btn">JP</button>
         </div>
 
         <div class="sidebar-content">
             <!-- Weather Card -->
             <div class="info-card weather-card shadow-sm" id="weather-info">
-                <div class="card-label">CURRENT WEATHER (HCMC)</div>
+                <div class="card-label" data-t="weather_title">CURRENT WEATHER (HCMC)</div>
                 <div id="weather-content" class="weather-body">
                     <div class="spinner-border spinner-border-sm text-light" role="status"></div>
                 </div>
@@ -22,60 +23,60 @@
 
             <!-- Route Search Card -->
             <div class="info-card shadow-sm">
-                <div class="card-label">ROUTE PLANNER</div>
+                <div class="card-label" data-t="route_planner">ROUTE PLANNER</div>
                 <div class="search-box">
                     <div class="input-group mb-2">
                         <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
-                        <input type="text" id="origin-input" class="form-control" placeholder="Starting Point">
+                        <input type="text" id="origin-input" class="form-control" data-t-placeholder="starting_point" placeholder="Starting Point">
                     </div>
                     <div class="input-group mb-3">
                         <span class="input-group-text"><i class="bi bi-flag"></i></span>
-                        <input type="text" id="destination-input" class="form-control" placeholder="Destination">
+                        <input type="text" id="destination-input" class="form-control" data-t-placeholder="destination" placeholder="Destination">
                     </div>
                     <button class="btn btn-primary-modern w-100" onclick="calculateRoute()">
-                        <i class="bi bi-search me-2"></i>Find Route
+                        <i class="bi bi-search me-2"></i><span data-t="find_route">Find Route</span>
                     </button>
                 </div>
             </div>
 
             <!-- Tourism Search Card -->
             <div class="info-card shadow-sm">
-                <div class="card-label">TOURISM EXPLORER</div>
+                <div class="card-label" data-t="tourism_explorer">TOURISM EXPLORER</div>
                 <div class="search-box">
                     <div class="input-group mb-2">
-                        <input type="text" id="tourist-search-input" class="form-control" placeholder="Search attractions (e.g. Temple)">
+                        <input type="text" id="tourist-search-input" class="form-control" data-t-placeholder="search_attractions" placeholder="Search attractions (e.g. Temple)">
                         <button class="btn btn-outline-primary" onclick="searchTouristSpots()">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
                     <div id="tourist-spots-list" class="mini-list mt-2">
-                        <small class="text-muted">Search for places to see markers</small>
+                        <small class="text-muted" data-t="search_hint">Search for places to see markers</small>
                     </div>
                 </div>
             </div>
 
             <!-- Recent Events -->
             <div class="info-card shadow-sm">
-                <div class="card-label">LOCAL EVENTS</div>
+                <div class="card-label" data-t="local_events">LOCAL EVENTS</div>
                 <div class="event-item">
                     <div class="event-icon bg-warning-soft"><i class="bi bi-cup-hot"></i></div>
                     <div class="event-details">
-                        <div class="event-title">Hanoi Food Fest</div>
-                        <div class="event-time">Tomorrow, 10:00</div>
+                        <div class="event-title" data-t="event1_title">Hanoi Food Fest</div>
+                        <div class="event-time" data-t="event1_time">Tomorrow, 10:00</div>
                     </div>
                 </div>
                 <div class="event-item">
                     <div class="event-icon bg-info-soft"><i class="bi bi-car-front"></i></div>
                     <div class="event-details">
-                        <div class="event-title">Motor Show 2026</div>
-                        <div class="event-time">Next Weekend</div>
+                        <div class="event-title" data-t="event2_title">Motor Show 2026</div>
+                        <div class="event-time" data-t="event2_time">Next Weekend</div>
                     </div>
                 </div>
             </div>
 
             <!-- External Apps -->
             <div class="info-card shadow-sm mb-4">
-                <div class="card-label">SERVICES</div>
+                <div class="card-label" data-t="services">SERVICES</div>
                 <div class="d-grid gap-2">
                     <a href="https://zalo.me" target="_blank" class="service-link btn-zalo">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Icon_Zalo.svg" width="20" class="me-2"> Zalo
@@ -94,9 +95,9 @@
         
         <!-- Legend Overlay -->
         <div class="map-legend">
-            <div class="legend-item"><span class="dot bg-success"></span> Smooth</div>
-            <div class="legend-item"><span class="dot bg-warning"></span> Slow</div>
-            <div class="legend-item"><span class="dot bg-danger"></span> Heavy</div>
+            <div class="legend-item"><span class="dot bg-success"></span> <span data-t="legend_smooth">Smooth</span></div>
+            <div class="legend-item"><span class="dot bg-warning"></span> <span data-t="legend_slow">Slow</span></div>
+            <div class="legend-item"><span class="dot bg-danger"></span> <span data-t="legend_heavy">Heavy</span></div>
         </div>
     </main>
 </div>
@@ -106,15 +107,15 @@
     <div class="chat-header-modern">
         <div class="d-flex align-items-center">
             <div class="ai-avatar me-2"><i class="bi bi-robot"></i></div>
-            <span>Gemini Assistant</span>
+            <span data-t="gemini_assistant">Gemini Assistant</span>
         </div>
         <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
     </div>
     <div class="chat-messages-modern" id="chat-messages">
-        <div class="message ai">Hi! I can help with traffic updates or tourist recommendations. What's on your mind?</div>
+        <div class="message ai" data-t="chat_welcome">Hi! I can help with traffic updates or tourist recommendations. What's on your mind?</div>
     </div>
     <div class="chat-input-modern">
-        <input type="text" id="chat-input" placeholder="Type your question..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <input type="text" id="chat-input" data-t-placeholder="chat_placeholder" placeholder="Type your question..." onkeypress="if(event.key==='Enter') sendMessage()">
         <button class="send-btn" onclick="sendMessage()"><i class="bi bi-send-fill"></i></button>
     </div>
 </div>
@@ -133,6 +134,90 @@
         let placesService;
         let infoWindow;
         let markers = [];
+        let currentLang = 'en';
+
+        const translations = {
+            en: {
+                location: "Saigon District 1",
+                weather_title: "CURRENT WEATHER (HCMC)",
+                route_planner: "ROUTE PLANNER",
+                starting_point: "Starting Point",
+                destination: "Destination",
+                find_route: "Find Route",
+                tourism_explorer: "TOURISM EXPLORER",
+                search_attractions: "Search attractions (e.g. Temple)",
+                search_hint: "Search for places to see markers",
+                local_events: "LOCAL EVENTS",
+                event1_title: "Hanoi Food Fest",
+                event1_time: "Tomorrow, 10:00",
+                event2_title: "Motor Show 2026",
+                event2_time: "Next Weekend",
+                services: "SERVICES",
+                legend_smooth: "Smooth",
+                legend_slow: "Slow",
+                legend_heavy: "Heavy",
+                gemini_assistant: "Gemini Assistant",
+                chat_welcome: "Hi! I can help with traffic updates or tourist recommendations. What's on your mind?",
+                chat_placeholder: "Type your question...",
+                humidity: "Humidity",
+                wind: "Wind",
+                searching: "Searching...",
+                no_results: "No results found",
+                lang_btn: "JP"
+            },
+            ja: {
+                location: "ホーチミン1区",
+                weather_title: "現在の天気 (ホーチミン)",
+                route_planner: "ルート検索",
+                starting_point: "出発地",
+                destination: "目的地",
+                find_route: "ルートを表示",
+                tourism_explorer: "観光スポット探索",
+                search_attractions: "観光名所を検索 (例: 寺院)",
+                search_hint: "場所を検索してマーカーを表示",
+                local_events: "ローカルイベント",
+                event1_title: "ハノイ・フードフェス",
+                event1_time: "明日 10:00",
+                event2_title: "モーターショー 2026",
+                event2_time: "来週末",
+                services: "サービス",
+                legend_smooth: "順調",
+                legend_slow: "混雑",
+                legend_heavy: "渋滞",
+                gemini_assistant: "Gemini アシスタント",
+                chat_welcome: "こんにちは！交通情報や観光の提案など、何でも聞いてください。",
+                chat_placeholder: "質問を入力してください...",
+                humidity: "湿度",
+                wind: "風速",
+                searching: "検索中...",
+                no_results: "結果が見つかりませんでした",
+                lang_btn: "EN"
+            }
+        };
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ja' : 'en';
+            applyTranslations();
+            fetchWeather(); // Refresh weather to get localized description
+        }
+
+        function applyTranslations() {
+            const t = translations[currentLang];
+            
+            // Translate text elements
+            document.querySelectorAll('[data-t]').forEach(el => {
+                const key = el.getAttribute('data-t');
+                if (t[key]) el.innerText = t[key];
+            });
+
+            // Translate placeholders
+            document.querySelectorAll('[data-t-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-t-placeholder');
+                if (t[key]) el.placeholder = t[key];
+            });
+
+            document.getElementById('lang-btn').innerText = t.lang_btn;
+        }
 
         function initMap() {
             const district1 = { lat: 10.776, lng: 106.700 };
@@ -212,7 +297,8 @@
 
             clearMarkers();
             const listContainer = document.getElementById("tourist-spots-list");
-            listContainer.innerHTML = '<div class="spinner-border spinner-border-sm text-primary"></div> Searching...';
+            const t = translations[currentLang];
+            listContainer.innerHTML = `<div class="spinner-border spinner-border-sm text-primary"></div> ${t.searching}`;
 
             placesService.textSearch(request, (results, status) => {
                 if (status === google.maps.places.PlacesServiceStatus.OK) {
@@ -222,7 +308,7 @@
                         addPlaceToList(place);
                     });
                 } else {
-                    listContainer.innerHTML = '<small class="text-danger">No results found</small>';
+                    listContainer.innerHTML = `<small class="text-danger">${t.no_results}</small>`;
                 }
             });
         }
@@ -276,6 +362,7 @@
             try {
                 const response = await fetch('/api/mapapi/weather?city=Ho Chi Minh City');
                 const data = await response.json();
+                const t = translations[currentLang];
                 if (data.main) {
                     document.getElementById("weather-content").innerHTML = `
                         <div class="d-flex justify-content-between align-items-center">
@@ -286,7 +373,7 @@
                             <i class="bi bi-cloud-sun fs-1 opacity-75"></i>
                         </div>
                         <div class="mt-2" style="font-size: 0.75rem; opacity: 0.9;">
-                            Humidity: ${data.main.humidity}% | Wind: ${data.wind.speed}m/s
+                            ${t.humidity}: ${data.main.humidity}% | ${t.wind}: ${data.wind.speed}m/s
                         </div>
                     `;
                 } else {
@@ -319,16 +406,22 @@
             appendMessage("user", message);
             input.value = "";
 
+            // Add language context to the message if it's Japanese
+            const contextualMessage = currentLang === 'ja' 
+                ? "【日本語で回答してください】" + message 
+                : message;
+
             try {
                 const response = await fetch('/api/mapapi/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ message: contextualMessage })
                 });
                 const data = await response.json();
                 appendMessage("ai", data.response);
             } catch (e) {
-                appendMessage("ai", "Sorry, I'm having trouble connecting right now.");
+                const t = translations[currentLang];
+                appendMessage("ai", currentLang === 'ja' ? "接続に問題が発生しました。" : "Sorry, I'm having trouble connecting right now.");
             }
         }
 

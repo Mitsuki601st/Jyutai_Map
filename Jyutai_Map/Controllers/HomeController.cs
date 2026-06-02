@@ -16,13 +16,10 @@ namespace Jyutai_Map.Controllers
             _configuration = configuration;
         }
 
-        // ★ このIndexアクションを修正してAPIキーをViewDataに格納します
         public IActionResult Index()
         {
-            // -------------------------------------------------------------
-            // 【追加】Google Maps Platform から取得した実際のAPIキーをここに記述してください
-            // -------------------------------------------------------------
-            ViewData["GoogleMapsApiKey"] = "";
+            // Read from appsettings.json (ApiKeys:GoogleMaps)
+            ViewData["GoogleMapsApiKey"] = _configuration["ApiKeys:GoogleMaps"];
 
             // 既存のレポート降順取得処理 
              var reports = _context.TrafficReports.OrderByDescending(r => r.ReportedAt).ToList(); 

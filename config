@@ -1,0 +1,5 @@
+Host github.com
+    User git
+    Hostname github.com
+    ProxyCommand connect -H プロキシのアドレス:ポート番号 %h %p
+    IdentityFile ~/.ssh/id_rsa

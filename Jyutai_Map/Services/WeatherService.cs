@@ -20,14 +20,15 @@ namespace Jyutai_Map.Services
             if (string.IsNullOrEmpty(_apiKey) || _apiKey == "YOUR_OPENWEATHERMAP_API_KEY")
                 return new { error = "API Key not configured" };
 
-            var url = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={_apiKey}&units=metric&lang=ja";
+            var encodedCity = System.Net.WebUtility.UrlEncode(city);
+            var url = $"https://api.openweathermap.org/data/2.5/weather?q={encodedCity}&appid={_apiKey}&units=metric&lang=ja";
             try
             {
                 return await _httpClient.GetFromJsonAsync<object>(url);
             }
-            catch
+            catch (Exception ex)
             {
-                return null;
+                return new { error = ex.Message };
             }
         }
     }
