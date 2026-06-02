@@ -16,11 +16,17 @@ namespace Jyutai_Map.Controllers
             _configuration = configuration;
         }
 
+        // ★ このIndexアクションを修正してAPIキーをViewDataに格納します
         public IActionResult Index()
         {
-            ViewBag.GoogleMapsKey = _configuration["ApiKeys:GoogleMaps"];
-            var reports = _context.TrafficReports.OrderByDescending(r => r.ReportedAt).ToList();
-            return View(reports);
+            // -------------------------------------------------------------
+            // 【追加】Google Maps Platform から取得した実際のAPIキーをここに記述してください
+            // -------------------------------------------------------------
+            ViewData["GoogleMapsApiKey"] = "";
+
+            // 既存のレポート降順取得処理 
+             var reports = _context.TrafficReports.OrderByDescending(r => r.ReportedAt).ToList(); 
+             return View(reports); 
         }
 
         // GET: Home/Create
