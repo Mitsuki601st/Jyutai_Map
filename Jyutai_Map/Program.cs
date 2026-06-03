@@ -15,7 +15,7 @@ namespace Jyutai_Map
                 options.UseNpgsql(connectionString));
 
             builder.Services.AddHttpClient<WeatherService>();
-            builder.Services.AddHttpClient<GeminiService>();
+            builder.Services.AddHttpClient<IAiService, GeminiServiceV2>();
 
             builder.Services.AddControllersWithViews();
 
