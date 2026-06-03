@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Smart Traffic & Tourism Dashboard";
     var googleMapsKey = ViewData["GoogleMapsApiKey"];
+    var openWeatherMapKey = ViewData["OpenWeatherMapApiKey"];
 }
 
 <div class="dashboard-wrapper">
@@ -18,6 +19,11 @@
                 <div class="card-label" data-t="weather_title">CURRENT WEATHER (HCMC)</div>
                 <div id="weather-content" class="weather-body">
                     <div class="spinner-border spinner-border-sm text-light" role="status"></div>
+                </div>
+                <hr class="border-light opacity-25">
+                <div class="form-check form-switch mt-2">
+                    <input class="form-check-input" type="checkbox" id="radar-toggle" onchange="toggleRadar(this.checked)">
+                    <label class="form-check-label text-light" for="radar-toggle" data-t="weather_radar" style="font-size: 0.8rem;">Weather Radar</label>
                 </div>
             </div>
 
@@ -90,8 +96,11 @@
     </aside>
 
     <!-- Map Area -->
-    <main class="main-map">
+    <main class="main-map" id="map-wrapper">
         <div id="map"></div>
+        <div id="windy-container" class="windy-pane" style="display: none;">
+            <iframe id="windy-iframe" width="100%" height="100%" frameborder="0"></iframe>
+        </div>
         
         <!-- Legend Overlay -->
         <div class="map-legend">
@@ -126,6 +135,17 @@
 
 @section Scripts {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .windy-pane {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            background: #f8f9fa;
+        }
+    </style>
     <script src="https://maps.googleapis.com/maps/api/js?key=@googleMapsKey&libraries=places"></script>
     <script>
         let map;
@@ -163,7 +183,8 @@
                 wind: "Wind",
                 searching: "Searching...",
                 no_results: "No results found",
-                lang_btn: "JP"
+                lang_btn: "JP",
+                weather_radar: "Weather Radar"
             },
             ja: {
                 location: "ホーチミン1区",
@@ -191,7 +212,8 @@
                 wind: "風速",
                 searching: "検索中...",
                 no_results: "結果が見つかりませんでした",
-                lang_btn: "EN"
+                lang_btn: "EN",
+                weather_radar: "雨雲レーダー"
             }
         };
 
@@ -255,6 +277,13 @@
 
             placesService = new google.maps.places.PlacesService(map);
             infoWindow = new google.maps.InfoWindow();
+
+            // Sync Windy when map is moved
+            map.addListener('idle', () => {
+                if (document.getElementById('windy-container').style.display !== 'none') {
+                    updateWindy();
+                }
+            });
 
             // Load existing reports (placeholder logic)
             @foreach (var report in Model)
@@ -360,9 +389,11 @@
 
         async function fetchWeather() {
             try {
-                const response = await fetch('/api/mapapi/weather?city=Ho Chi Minh City');
+                // Using 'Ho Chi Minh' for better compatibility
+                const response = await fetch('/api/mapapi/weather?city=Ho Chi Minh');
                 const data = await response.json();
                 const t = translations[currentLang];
+                
                 if (data.main) {
                     document.getElementById("weather-content").innerHTML = `
                         <div class="d-flex justify-content-between align-items-center">
@@ -377,10 +408,13 @@
                         </div>
                     `;
                 } else {
-                    document.getElementById("weather-content").innerText = "No data";
+                    const errMsg = data.message || (data.error ? data.error : "No data");
+                    document.getElementById("weather-content").innerText = "Weather: " + errMsg;
+                    console.error("Weather API error:", data);
                 }
             } catch (e) {
                 document.getElementById("weather-content").innerText = "Service unavailable";
+                console.error("Weather fetch failed:", e);
             }
         }
 
@@ -432,6 +466,41 @@
             msgDiv.innerHTML = text;
             container.appendChild(msgDiv);
             container.scrollTop = container.scrollHeight;
+        }
+
+        function toggleRadar(show) {
+            const windyContainer = document.getElementById('windy-container');
+            const mapDiv = document.getElementById('map');
+            const legend = document.querySelector('.map-legend');
+            
+            if (show) {
+                mapDiv.style.visibility = 'hidden';
+                if (legend) legend.style.display = 'none';
+                windyContainer.style.display = 'block';
+                updateWindy();
+            } else {
+                mapDiv.style.visibility = 'visible';
+                if (legend) legend.style.display = 'flex';
+                windyContainer.style.display = 'none';
+                google.maps.event.trigger(map, 'resize');
+            }
+        }
+
+        function updateWindy() {
+            const center = map.getCenter();
+            const lat = center.lat();
+            const lon = center.lng();
+            const zoom = map.getZoom();
+            const lang = currentLang === 'ja' ? 'ja' : 'en';
+            const windyIframe = document.getElementById('windy-iframe');
+            
+            // Windy embed URL with radar overlay and language support
+            const url = `https://www.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=${zoom}&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&detailLat=${lat}&detailLon=${lon}&metricWind=default&metricTemp=default&radarRange=-1&lang=${lang}`;
+            
+            // Only update if the URL actually changed to prevent flickering
+            if (windyIframe.src !== url) {
+                windyIframe.src = url;
+            }
         }
 
         window.onload = () => {

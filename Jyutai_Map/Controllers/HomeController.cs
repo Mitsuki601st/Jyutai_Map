@@ -20,6 +20,7 @@ namespace Jyutai_Map.Controllers
         {
             // Read from appsettings.json (ApiKeys:GoogleMaps)
             ViewData["GoogleMapsApiKey"] = _configuration["ApiKeys:GoogleMaps"];
+            ViewData["OpenWeatherMapApiKey"] = _configuration["ApiKeys:OpenWeatherMap"];
 
             // 既存のレポート降順取得処理 
              var reports = _context.TrafficReports.OrderByDescending(r => r.ReportedAt).ToList(); 
