@@ -8,12 +8,12 @@ namespace Jyutai_Map.Controllers
     public class MapApiController : ControllerBase
     {
         private readonly WeatherService _weatherService;
-        private readonly GeminiService _geminiService;
+        private readonly IAiService _aiService;
 
-        public MapApiController(WeatherService weatherService, GeminiService geminiService)
+        public MapApiController(WeatherService weatherService, IAiService aiService)
         {
             _weatherService = weatherService;
-            _geminiService = geminiService;
+            _aiService = aiService;
         }
 
         [HttpGet("weather")]
@@ -29,7 +29,7 @@ namespace Jyutai_Map.Controllers
             if (string.IsNullOrEmpty(request.Message))
                 return BadRequest("メッセージが空です。");
 
-            var response = await _geminiService.ChatAsync(request.Message);
+            var response = await _aiService.ChatAsync(request.Message);
             return Ok(new { response });
         }
     }
