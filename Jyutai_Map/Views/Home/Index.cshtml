@@ -500,6 +500,22 @@
             }
         }
 
+        let aiSession;
+
+        (async () => {
+            try {
+                if (typeof LanguageModel !== 'undefined') {
+                    aiSession = await LanguageModel.create();
+                } else if (typeof ai !== 'undefined' && ai.languageModel) {
+                    aiSession = await ai.languageModel.create();
+                } else {
+                    console.error("Local AI (LanguageModel) is not supported in this browser.");
+                }
+            } catch (e) {
+                console.error("Failed to initialize AI session:", e);
+            }
+        })();
+
         async function sendMessage() {
             const input = document.getElementById("chat-input");
             const message = input.value;
@@ -508,22 +524,23 @@
             appendMessage("user", message);
             input.value = "";
 
+            if (!aiSession) {
+                appendMessage("ai", "Local AI session is not initialized. Please check if your browser supports Built-in AI.");
+                return;
+            }
+
             // Add language context to the message if it's Japanese
             const contextualMessage = currentLang === 'ja' 
                 ? "【日本語で回答してください】" + message 
                 : message;
 
             try {
-                const response = await fetch('/api/mapapi/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: contextualMessage })
-                });
-                const data = await response.json();
-                appendMessage("ai", data.response);
+                const result = await aiSession.prompt(contextualMessage);
+                appendMessage("ai", result);
             } catch (e) {
                 const t = translations[currentLang];
-                appendMessage("ai", currentLang === 'ja' ? "接続に問題が発生しました。" : "Sorry, I'm having trouble connecting right now.");
+                appendMessage("ai", currentLang === 'ja' ? "AIの応答中にエラーが発生しました。" : "Sorry, an error occurred while processing your request.");
+                console.error("AI Prompt Error:", e);
             }
         }
 
@@ -576,27 +593,4 @@
             fetchWeather();
         };
     </script>
-
-    <button onclick="test()">テスト</button>
-
-    <script>
-
-        let session;
-
-        (async () => {
-        session = await LanguageModel.create();
-        })();
-
-        async function test() {
-
-        const result =
-        await session.prompt("こんにちは");
-
-        console.log(result);
-
-        alert(result);
-        }
-
-    </script>
-
 }
