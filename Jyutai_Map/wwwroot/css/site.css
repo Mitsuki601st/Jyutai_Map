@@ -170,7 +170,8 @@ body {
 .map-legend {
     position: absolute;
     bottom: 24px;
-    left: 24px;
+    left: 50%;
+    transform: translateX(-50%);
     background: var(--glass-bg);
     padding: 12px;
     border-radius: 10px;
@@ -179,6 +180,7 @@ body {
     gap: 15px;
     font-size: 0.8rem;
     font-weight: 600;
+    z-index: 5;
 }
 
 .dot {
@@ -193,7 +195,7 @@ body {
 .map-control-btn {
     position: absolute;
     top: 24px;
-    right: 24px;
+    left: 24px;
     width: 40px;
     height: 40px;
     background: white;
@@ -206,7 +208,7 @@ body {
     justify-content: center;
     font-size: 1.2rem;
     color: #666;
-    z-index: 10;
+    z-index: 1001;
     transition: background-color 0.2s;
 }
 
@@ -218,8 +220,8 @@ body {
 /* Chat Modern */
 .chat-modern {
     position: fixed;
-    bottom: 90px;
-    right: 24px;
+    top: 135px;
+    left: 420px;
     width: 360px;
     height: 500px;
     background: white;
@@ -307,8 +309,8 @@ body {
 
 .chat-toggle-btn {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    top: 73px;
+    left: 420px;
     width: 56px;
     height: 56px;
     border-radius: 50%;

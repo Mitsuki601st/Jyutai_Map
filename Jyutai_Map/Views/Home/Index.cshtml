@@ -145,7 +145,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 5;
+            z-index: 1;
             background: #f8f9fa;
         }
     </style>
@@ -382,14 +382,14 @@
             );
         }
 
-        async function searchTouristSpots() {
-            const query = document.getElementById("tourist-search-input").value;
-            if (!query) return;
+        async function searchTouristSpots(query) {
+            const searchQuery = query || document.getElementById("tourist-search-input").value;
+            if (!searchQuery) return;
 
             const request = {
                 location: map.getCenter(),
                 radius: '3000',
-                query: query
+                query: searchQuery
             };
 
             clearMarkers();
@@ -400,10 +400,27 @@
             placesService.textSearch(request, (results, status) => {
                 if (status === google.maps.places.PlacesServiceStatus.OK) {
                     listContainer.innerHTML = "";
+                    const bounds = new google.maps.LatLngBounds();
+                    
                     results.slice(0, 5).forEach(place => {
                         createPlaceMarker(place);
                         addPlaceToList(place);
+                        if (place.geometry && place.geometry.location) {
+                            bounds.extend(place.geometry.location);
+                        }
                     });
+
+                    // Automatically adjust map to show all results
+                    map.fitBounds(bounds);
+                    
+                    // If triggered by AI, show hint
+                    if (query) {
+                        const hint = document.createElement("div");
+                        hint.className = "mt-2 p-2 bg-light rounded border";
+                        hint.style.fontSize = "0.75rem";
+                        hint.innerHTML = `<i class="bi bi-info-circle me-1"></i> Showing results and adjusting view for: <strong>${searchQuery}</strong>`;
+                        listContainer.prepend(hint);
+                    }
                 } else {
                     listContainer.innerHTML = `<small class="text-danger">${t.no_results}</small>`;
                 }
@@ -500,6 +517,22 @@
             }
         }
 
+        let aiSession;
+
+        (async () => {
+            try {
+                if (typeof LanguageModel !== 'undefined') {
+                    aiSession = await LanguageModel.create();
+                } else if (typeof ai !== 'undefined' && ai.languageModel) {
+                    aiSession = await ai.languageModel.create();
+                } else {
+                    console.error("Local AI (LanguageModel) is not supported in this browser.");
+                }
+            } catch (e) {
+                console.error("Failed to initialize AI session:", e);
+            }
+        })();
+
         async function sendMessage() {
             const input = document.getElementById("chat-input");
             const message = input.value;
@@ -508,22 +541,45 @@
             appendMessage("user", message);
             input.value = "";
 
-            // Add language context to the message if it's Japanese
+            if (!aiSession) {
+                appendMessage("ai", "Local AI session is not initialized. Please check if your browser supports Built-in AI.");
+                return;
+            }
+
+            // System instructions to handle search and map integration
+            const systemPrompt = "You are a helpful assistant for a traffic and tourism app in Ho Chi Minh City. " +
+                "1. If user asks for recommendations, provide them and end with [SEARCH:query]. " +
+                "2. If user asks to 'zoom in', 'zoom out', or 'show more area', end with [ZOOM:level] where level is a number (e.g., [ZOOM:18] for close-up, [ZOOM:12] for wide view). Current default is 15. " +
+                "3. You can combine tags, e.g., [SEARCH:park][ZOOM:16].";
+
             const contextualMessage = currentLang === 'ja' 
-                ? "【日本語で回答してください】" + message 
-                : message;
+                ? `${systemPrompt}\n【日本語で回答してください】\n${message}` 
+                : `${systemPrompt}\n${message}`;
 
             try {
-                const response = await fetch('/api/mapapi/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: contextualMessage })
-                });
-                const data = await response.json();
-                appendMessage("ai", data.response);
+                let result = await aiSession.prompt(contextualMessage);
+                
+                // Check for zoom tag
+                const zoomMatch = result.match(/\[ZOOM:(\d+)\]/);
+                if (zoomMatch) {
+                    const zoomLevel = parseInt(zoomMatch[1]);
+                    map.setZoom(zoomLevel);
+                    result = result.replace(/\[ZOOM:\d+\]/, "").trim();
+                }
+
+                // Check for search tag
+                const searchMatch = result.match(/\[SEARCH:(.*?)\]/);
+                if (searchMatch) {
+                    const searchQuery = searchMatch[1].trim();
+                    result = result.replace(/\[SEARCH:.*?\]/, "").trim();
+                    searchTouristSpots(searchQuery);
+                }
+
+                appendMessage("ai", result);
             } catch (e) {
                 const t = translations[currentLang];
-                appendMessage("ai", currentLang === 'ja' ? "接続に問題が発生しました。" : "Sorry, I'm having trouble connecting right now.");
+                appendMessage("ai", currentLang === 'ja' ? "AIの応答中にエラーが発生しました。" : "Sorry, an error occurred while processing your request.");
+                console.error("AI Prompt Error:", e);
             }
         }
 
@@ -576,27 +632,4 @@
             fetchWeather();
         };
     </script>
-
-    <button onclick="test()">テスト</button>
-
-    <script>
-
-        let session;
-
-        (async () => {
-        session = await LanguageModel.create();
-        })();
-
-        async function test() {
-
-        const result =
-        await session.prompt("こんにちは");
-
-        console.log(result);
-
-        alert(result);
-        }
-
-    </script>
-
 }
