@@ -98,6 +98,9 @@
     <!-- Map Area -->
     <main class="main-map" id="map-wrapper">
         <div id="map"></div>
+        <button id="current-location-btn" class="map-control-btn" data-t-title="find_my_location" title="Find My Location" onclick="findMyLocation()">
+            <i class="bi bi-crosshair"></i>
+        </button>
         <div id="windy-container" class="windy-pane" style="display: none;">
             <iframe id="windy-iframe" width="100%" height="100%" frameborder="0"></iframe>
         </div>
@@ -184,7 +187,10 @@
                 searching: "Searching...",
                 no_results: "No results found",
                 lang_btn: "JP",
-                weather_radar: "Weather Radar"
+                weather_radar: "Weather Radar",
+                find_my_location: "Find My Location",
+                location_error: "Error: The Geolocation service failed.",
+                location_no_support: "Error: Your browser doesn't support geolocation."
             },
             ja: {
                 location: "ホーチミン1区",
@@ -213,7 +219,10 @@
                 searching: "検索中...",
                 no_results: "結果が見つかりませんでした",
                 lang_btn: "EN",
-                weather_radar: "雨雲レーダー"
+                weather_radar: "雨雲レーダー",
+                find_my_location: "現在地を表示",
+                location_error: "エラー: 位置情報サービスに失敗しました。",
+                location_no_support: "エラー: お使いのブラウザは位置情報をサポートしていません。"
             }
         };
 
@@ -238,7 +247,66 @@
                 if (t[key]) el.placeholder = t[key];
             });
 
+            // Translate titles
+            document.querySelectorAll('[data-t-title]').forEach(el => {
+                const key = el.getAttribute('data-t-title');
+                if (t[key]) el.title = t[key];
+            });
+
             document.getElementById('lang-btn').innerText = t.lang_btn;
+        }
+
+        let userMarker;
+
+        function findMyLocation() {
+            const t = translations[currentLang];
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const pos = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                        };
+
+                        if (userMarker) {
+                            userMarker.setPosition(pos);
+                        } else {
+                            userMarker = new google.maps.Marker({
+                                position: pos,
+                                map: map,
+                                icon: {
+                                    path: google.maps.SymbolPath.CIRCLE,
+                                    scale: 10,
+                                    fillColor: "#4285F4",
+                                    fillOpacity: 1,
+                                    strokeColor: "white",
+                                    strokeWeight: 2,
+                                },
+                                title: t.find_my_location
+                            });
+                        }
+                        map.setCenter(pos);
+                        map.setZoom(17);
+                    },
+                    () => {
+                        handleLocationError(true, infoWindow, map.getCenter());
+                    }
+                );
+            } else {
+                // Browser doesn't support Geolocation
+                handleLocationError(false, infoWindow, map.getCenter());
+            }
+        }
+
+        function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+            const t = translations[currentLang];
+            infoWindow.setPosition(pos);
+            infoWindow.setContent(
+                browserHasGeolocation
+                    ? t.location_error
+                    : t.location_no_support
+            );
+            infoWindow.open(map);
         }
 
         function initMap() {
@@ -508,4 +576,27 @@
             fetchWeather();
         };
     </script>
+
+    <button onclick="test()">テスト</button>
+
+    <script>
+
+        let session;
+
+        (async () => {
+        session = await LanguageModel.create();
+        })();
+
+        async function test() {
+
+        const result =
+        await session.prompt("こんにちは");
+
+        console.log(result);
+
+        alert(result);
+        }
+
+    </script>
+
 }
