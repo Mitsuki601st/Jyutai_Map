@@ -29,17 +29,24 @@
 
             <!-- Route Search Card -->
             <div class="info-card shadow-sm">
-                <div class="card-label" data-t="route_planner">ROUTE PLANNER</div>
+                <div class="card-label d-flex justify-content-between align-items-center">
+                    <span data-t="route_planner">ROUTE PLANNER</span>
+                    <button class="history-btn" onclick="showHistory('Route', 'origin-input')" data-t-title="history" title="History">
+                        <i class="bi bi-clock-history"></i>
+                    </button>
+                </div>
                 <div class="search-box">
-                    <div class="input-group mb-2">
+                    <div class="input-group mb-2 position-relative">
                         <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
-                        <input type="text" id="origin-input" class="form-control" data-t-placeholder="starting_point" placeholder="Starting Point">
+                        <input type="text" id="origin-input" class="form-control pe-5" data-t-placeholder="starting_point" placeholder="Starting Point">
+                        <button class="btn-clear" onclick="clearInput('origin-input')" title="Clear"><i class="bi bi-x"></i></button>
                     </div>
-                    <div class="input-group mb-3">
+                    <div class="input-group mb-3 position-relative">
                         <span class="input-group-text"><i class="bi bi-flag"></i></span>
-                        <input type="text" id="destination-input" class="form-control" data-t-placeholder="destination" placeholder="Destination">
+                        <input type="text" id="destination-input" class="form-control pe-5" data-t-placeholder="destination" placeholder="Destination">
+                        <button class="btn-clear" onclick="clearInput('destination-input')" title="Clear"><i class="bi bi-x"></i></button>
                     </div>
-                    <button class="btn btn-primary-modern w-100" onclick="calculateRoute()">
+                    <button class="btn btn-primary-modern w-100" onclick="handleRouteButtonClick()">
                         <i class="bi bi-search me-2"></i><span data-t="find_route">Find Route</span>
                     </button>
                 </div>
@@ -47,11 +54,17 @@
 
             <!-- Tourism Search Card -->
             <div class="info-card shadow-sm">
-                <div class="card-label" data-t="tourism_explorer">TOURISM EXPLORER</div>
+                <div class="card-label d-flex justify-content-between align-items-center">
+                    <span data-t="tourism_explorer">TOURISM EXPLORER</span>
+                    <button class="history-btn" onclick="showHistory('Tourist', 'tourist-search-input')" data-t-title="history" title="History">
+                        <i class="bi bi-clock-history"></i>
+                    </button>
+                </div>
                 <div class="search-box">
-                    <div class="input-group mb-2">
-                        <input type="text" id="tourist-search-input" class="form-control" data-t-placeholder="search_attractions" placeholder="Search attractions (e.g. Temple)">
-                        <button class="btn btn-outline-primary" onclick="searchTouristSpots()">
+                    <div class="input-group mb-2 position-relative">
+                        <input type="text" id="tourist-search-input" class="form-control pe-5" data-t-placeholder="search_attractions" placeholder="Search attractions (e.g. Temple)">
+                        <button class="btn-clear" style="right: 45px;" onclick="clearInput('tourist-search-input')" title="Clear"><i class="bi bi-x"></i></button>
+                        <button class="btn btn-outline-primary" onclick="handleTouristButtonClick()">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
@@ -148,6 +161,65 @@
             z-index: 1;
             background: #f8f9fa;
         }
+
+        /* History Dropdown Styles */
+        .history-dropdown {
+            position: absolute;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .history-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+            color: #333;
+        }
+        .history-item:hover {
+            background-color: #f0f7ff;
+        }
+        .search-box {
+            position: relative;
+        }
+        /* History Button Styles */
+        .history-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.7);
+            padding: 2px 5px;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .history-btn:hover {
+            color: #fff;
+        }
+        /* Clear Button Styles */
+        .btn-clear {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #999;
+            padding: 0 5px;
+            z-index: 5;
+            display: none;
+        }
+        .btn-clear:hover {
+            color: #333;
+        }
+        .input-group:focus-within .btn-clear,
+        .input-group:hover .btn-clear {
+            display: block;
+        }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?key=@googleMapsKey&libraries=places"></script>
     <script>
@@ -179,8 +251,8 @@
                 legend_smooth: "Smooth",
                 legend_slow: "Slow",
                 legend_heavy: "Heavy",
-                gemini_assistant: "Gemini Assistant",
-                chat_welcome: "Hi! I can help with traffic updates or tourist recommendations. What's on your mind?",
+                gemini_assistant: "AI Assistant",
+                chat_welcome: "Hi! I'm an assistant specialized in Saigon District 1. I can help with traffic updates or tourist recommendations. What's on your mind?",
                 chat_placeholder: "Type your question...",
                 humidity: "Humidity",
                 wind: "Wind",
@@ -190,7 +262,8 @@
                 weather_radar: "Weather Radar",
                 find_my_location: "Find My Location",
                 location_error: "Error: The Geolocation service failed.",
-                location_no_support: "Error: Your browser doesn't support geolocation."
+                location_no_support: "Error: Your browser doesn't support geolocation.",
+                history: "History"
             },
             ja: {
                 location: "ホーチミン1区",
@@ -211,8 +284,8 @@
                 legend_smooth: "順調",
                 legend_slow: "混雑",
                 legend_heavy: "渋滞",
-                gemini_assistant: "Gemini アシスタント",
-                chat_welcome: "こんにちは！交通情報や観光の提案など、何でも聞いてください。",
+                gemini_assistant: "AI アシスタント",
+                chat_welcome: "こんにちは！ホーチミン市1区に特化したアシスタントです。交通情報や観光の提案など、何でも聞いてください。",
                 chat_placeholder: "質問を入力してください...",
                 humidity: "湿度",
                 wind: "風速",
@@ -222,230 +295,238 @@
                 weather_radar: "雨雲レーダー",
                 find_my_location: "現在地を表示",
                 location_error: "エラー: 位置情報サービスに失敗しました。",
-                location_no_support: "エラー: お使いのブラウザは位置情報をサポートしていません。"
+                location_no_support: "エラー: お使いのブラウザは位置情報をサポートしていません。",
+                history: "履歴"
             }
         };
 
         function toggleLanguage() {
             currentLang = currentLang === 'en' ? 'ja' : 'en';
             applyTranslations();
-            fetchWeather(); // Refresh weather to get localized description
+            fetchWeather();
         }
 
         function applyTranslations() {
             const t = translations[currentLang];
-            
-            // Translate text elements
             document.querySelectorAll('[data-t]').forEach(el => {
                 const key = el.getAttribute('data-t');
                 if (t[key]) el.innerText = t[key];
             });
-
-            // Translate placeholders
             document.querySelectorAll('[data-t-placeholder]').forEach(el => {
                 const key = el.getAttribute('data-t-placeholder');
                 if (t[key]) el.placeholder = t[key];
             });
-
-            // Translate titles
             document.querySelectorAll('[data-t-title]').forEach(el => {
                 const key = el.getAttribute('data-t-title');
                 if (t[key]) el.title = t[key];
             });
-
             document.getElementById('lang-btn').innerText = t.lang_btn;
         }
 
-        let userMarker;
+        function clearInput(inputId) {
+            const input = document.getElementById(inputId);
+            input.value = "";
+            input.focus();
+        }
 
+        let userMarker;
         function findMyLocation() {
             const t = translations[currentLang];
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const pos = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                        };
-
-                        if (userMarker) {
-                            userMarker.setPosition(pos);
-                        } else {
-                            userMarker = new google.maps.Marker({
-                                position: pos,
-                                map: map,
-                                icon: {
-                                    path: google.maps.SymbolPath.CIRCLE,
-                                    scale: 10,
-                                    fillColor: "#4285F4",
-                                    fillOpacity: 1,
-                                    strokeColor: "white",
-                                    strokeWeight: 2,
-                                },
-                                title: t.find_my_location
-                            });
-                        }
-                        map.setCenter(pos);
-                        map.setZoom(17);
-                    },
-                    () => {
-                        handleLocationError(true, infoWindow, map.getCenter());
-                    }
-                );
-            } else {
-                // Browser doesn't support Geolocation
-                handleLocationError(false, infoWindow, map.getCenter());
-            }
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    if (userMarker) userMarker.setPosition(pos);
+                    else userMarker = new google.maps.Marker({
+                        position: pos, map: map,
+                        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#4285F4", fillOpacity: 1, strokeColor: "white", strokeWeight: 2 },
+                        title: t.find_my_location
+                    });
+                    map.setCenter(pos);
+                    map.setZoom(17);
+                }, () => handleLocationError(true, infoWindow, map.getCenter()));
+            } else handleLocationError(false, infoWindow, map.getCenter());
         }
 
         function handleLocationError(browserHasGeolocation, infoWindow, pos) {
             const t = translations[currentLang];
             infoWindow.setPosition(pos);
-            infoWindow.setContent(
-                browserHasGeolocation
-                    ? t.location_error
-                    : t.location_no_support
-            );
+            infoWindow.setContent(browserHasGeolocation ? t.location_error : t.location_no_support);
             infoWindow.open(map);
         }
 
         function initMap() {
             const district1 = { lat: 10.776, lng: 106.700 };
             map = new google.maps.Map(document.getElementById("map"), {
-                zoom: 15,
-                center: district1,
-                styles: [
-                    {
-                        "featureType": "all",
-                        "elementType": "labels.text.fill",
-                        "stylers": [{"color": "#7c93a3"}]
-                    },
-                    {
-                        "featureType": "water",
-                        "elementType": "geometry",
-                        "stylers": [{"color": "#c8d7d4"}]
-                    }
-                ],
-                mapTypeControl: false,
-                streetViewControl: false,
-                fullscreenControl: false
+                zoom: 15, center: district1,
+                styles: [{ "featureType": "all", "elementType": "labels.text.fill", "stylers": [{ "color": "#7c93a3" }] }, { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#c8d7d4" }] }],
+                mapTypeControl: false, streetViewControl: false, fullscreenControl: false
             });
-
-            const trafficLayer = new google.maps.TrafficLayer();
-            trafficLayer.setMap(map);
-
+            const trafficLayer = new google.maps.TrafficLayer(); trafficLayer.setMap(map);
             directionsService = new google.maps.DirectionsService();
-            directionsRenderer = new google.maps.DirectionsRenderer({
-                map: map,
-                polylineOptions: {
-                    strokeColor: "#4A90E2",
-                    strokeWeight: 6
-                }
-            });
-
+            directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: true, polylineOptions: { strokeColor: "#4A90E2", strokeWeight: 6 } });
             placesService = new google.maps.places.PlacesService(map);
             infoWindow = new google.maps.InfoWindow();
+            map.addListener('idle', () => { if (document.getElementById('windy-container').style.display !== 'none') updateWindy(); });
+        }
 
-            // Sync Windy when map is moved
-            map.addListener('idle', () => {
-                if (document.getElementById('windy-container').style.display !== 'none') {
-                    updateWindy();
+        async function saveHistory(type, query) {
+            if (!query) return;
+            try {
+                await fetch('/api/mapapi/history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, query }) });
+            } catch (e) { console.error("Failed to save history:", e); }
+        }
+
+        async function showHistory(type, inputId) {
+            const input = document.getElementById(inputId);
+            let dropdown;
+            if (input.parentNode.classList.contains('input-group')) {
+                const group = input.parentNode; dropdown = group.nextElementSibling;
+                if (!dropdown || !dropdown.classList.contains('history-dropdown')) {
+                    dropdown = document.createElement('div'); dropdown.className = 'history-dropdown';
+                    group.parentNode.insertBefore(dropdown, group.nextSibling);
                 }
-            });
-
-            // Load existing reports (placeholder logic)
-            @foreach (var report in Model)
-            {
-                // Here you would add markers for existing congestion reports
+            } else {
+                dropdown = input.nextElementSibling;
+                if (!dropdown || !dropdown.classList.contains('history-dropdown')) {
+                    dropdown = document.createElement('div'); dropdown.className = 'history-dropdown';
+                    input.parentNode.insertBefore(dropdown, input.nextSibling);
+                }
             }
+            try {
+                const response = await fetch(`/api/mapapi/history?type=${type}`);
+                const history = await response.json();
+                if (history.length === 0) { dropdown.style.display = 'none'; return; }
+                dropdown.innerHTML = history.map(h => `<div class="history-item" onclick="selectHistory('${inputId}', '${h.query}')">${h.query.replace('|', ' → ')}</div>`).join('');
+                dropdown.style.display = 'block';
+                const closeHandler = (e) => { if (!input.contains(e.target) && !dropdown.contains(e.target)) { dropdown.style.display = 'none'; document.removeEventListener('click', closeHandler); } };
+                setTimeout(() => document.addEventListener('click', closeHandler), 10);
+            } catch (e) { console.error("Failed to fetch history:", e); }
+        }
+
+        function handleRouteButtonClick() {
+            const origin = document.getElementById('origin-input').value;
+            const dest = document.getElementById('destination-input').value;
+            if (!origin && !dest) showHistory('Route', 'origin-input');
+            else calculateRoute();
+        }
+
+        function handleTouristButtonClick() {
+            const query = document.getElementById('tourist-search-input').value;
+            if (!query) showHistory('Tourist', 'tourist-search-input');
+            else searchTouristSpots();
+        }
+
+        async function loadLatestHistory() {
+            try {
+                const routeResp = await fetch('/api/mapapi/history?type=Route');
+                const routeHist = await routeResp.json();
+                if (routeHist.length > 0) {
+                    const parts = routeHist[0].query.split('|');
+                    if (parts.length === 2) {
+                        document.getElementById('origin-input').value = parts[0];
+                        document.getElementById('destination-input').value = parts[1];
+                    }
+                }
+                const tourResp = await fetch('/api/mapapi/history?type=Tourist');
+                const tourHist = await tourResp.json();
+                if (tourHist.length > 0) document.getElementById('tourist-search-input').value = tourHist[0].query;
+            } catch (e) { console.error("Failed to load latest history:", e); }
+        }
+
+        function selectHistory(inputId, query) {
+            const input = document.getElementById(inputId);
+            let dropdown = input.parentNode.classList.contains('input-group') ? input.parentNode.nextElementSibling : input.nextElementSibling;
+            if (query.includes('|')) {
+                const parts = query.split('|');
+                document.getElementById('origin-input').value = parts[0];
+                document.getElementById('destination-input').value = parts[1];
+            } else input.value = query;
+            if (dropdown && dropdown.classList.contains('history-dropdown')) dropdown.style.display = 'none';
         }
 
         function calculateRoute() {
             const origin = document.getElementById("origin-input").value;
             const destination = document.getElementById("destination-input").value;
-
             if (!origin || !destination) return;
+            saveHistory('Route', `${origin}|${destination}`);
+            directionsService.route({ origin, destination, travelMode: google.maps.TravelMode.DRIVING }, (response, status) => {
+                if (status === "OK") {
+                    directionsRenderer.setDirections(response);
+                    clearMarkers();
+                    const leg = response.routes[0].legs[0];
+                    const t = translations[currentLang];
+                    
+                    const startMarker = new google.maps.Marker({
+                        position: leg.start_location,
+                        map: map,
+                        icon: { url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png" }
+                    });
+                    markers.push(startMarker);
 
-            directionsService.route(
-                {
-                    origin: origin,
-                    destination: destination,
-                    travelMode: google.maps.TravelMode.DRIVING,
-                },
-                (response, status) => {
-                    if (status === "OK") {
-                        directionsRenderer.setDirections(response);
-                    } else {
-                        alert("Route calculation failed: " + status);
-                    }
+                    const endMarker = new google.maps.Marker({
+                        position: leg.end_location,
+                        map: map,
+                        icon: { url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png" }
+                    });
+                    markers.push(endMarker);
+
+                    const content = `
+                        <div style="padding: 10px; min-width: 200px;">
+                            <div class="fw-bold mb-1" style="color: #4A90E2; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                                <i class="bi bi-info-circle me-1"></i> ${t.route_planner}
+                            </div>
+                            <div class="mb-1" style="font-size: 0.85rem;"><strong>${t.starting_point}:</strong> ${leg.start_address}</div>
+                            <div class="mb-1" style="font-size: 0.85rem;"><strong>${t.destination}:</strong> ${leg.end_address}</div>
+                            <div class="d-flex justify-content-between mt-2 pt-2 border-top" style="font-size: 0.8rem;">
+                                <span><i class="bi bi-signpost-split me-1"></i> ${leg.distance.text}</span>
+                                <span><i class="bi bi-clock me-1"></i> ${leg.duration.text}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    const showPopup = () => {
+                        infoWindow.setContent(content);
+                        infoWindow.open(map, endMarker);
+                    };
+
+                    startMarker.addListener("click", showPopup);
+                    endMarker.addListener("click", showPopup);
+                    showPopup();
                 }
-            );
+                else alert("Route calculation failed: " + status);
+            });
         }
 
         async function searchTouristSpots(query) {
             const searchQuery = query || document.getElementById("tourist-search-input").value;
             if (!searchQuery) return;
-
-            const request = {
-                location: map.getCenter(),
-                radius: '3000',
-                query: searchQuery
-            };
-
+            if (!query) saveHistory('Tourist', searchQuery);
+            const request = { location: map.getCenter(), radius: '3000', query: searchQuery };
             clearMarkers();
             const listContainer = document.getElementById("tourist-spots-list");
             const t = translations[currentLang];
             listContainer.innerHTML = `<div class="spinner-border spinner-border-sm text-primary"></div> ${t.searching}`;
-
             placesService.textSearch(request, (results, status) => {
                 if (status === google.maps.places.PlacesServiceStatus.OK) {
-                    listContainer.innerHTML = "";
-                    const bounds = new google.maps.LatLngBounds();
-                    
+                    listContainer.innerHTML = ""; const bounds = new google.maps.LatLngBounds();
                     results.slice(0, 5).forEach(place => {
-                        createPlaceMarker(place);
-                        addPlaceToList(place);
-                        if (place.geometry && place.geometry.location) {
-                            bounds.extend(place.geometry.location);
-                        }
+                        createPlaceMarker(place); addPlaceToList(place);
+                        if (place.geometry && place.geometry.location) bounds.extend(place.geometry.location);
                     });
-
-                    // Automatically adjust map to show all results
                     map.fitBounds(bounds);
-                    
-                    // If triggered by AI, show hint
                     if (query) {
-                        const hint = document.createElement("div");
-                        hint.className = "mt-2 p-2 bg-light rounded border";
-                        hint.style.fontSize = "0.75rem";
-                        hint.innerHTML = `<i class="bi bi-info-circle me-1"></i> Showing results and adjusting view for: <strong>${searchQuery}</strong>`;
+                        const hint = document.createElement("div"); hint.className = "mt-2 p-2 bg-light rounded border"; hint.style.fontSize = "0.75rem";
+                        hint.innerHTML = `<i class="bi bi-info-circle me-1"></i> Showing results for: <strong>${searchQuery}</strong>`;
                         listContainer.prepend(hint);
                     }
-                } else {
-                    listContainer.innerHTML = `<small class="text-danger">${t.no_results}</small>`;
-                }
+                } else listContainer.innerHTML = `<small class="text-danger">${t.no_results}</small>`;
             });
         }
 
         function createPlaceMarker(place) {
-            const marker = new google.maps.Marker({
-                map: map,
-                position: place.geometry.location,
-                title: place.name,
-                animation: google.maps.Animation.DROP,
-                icon: {
-                    url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-                }
-            });
-
+            const marker = new google.maps.Marker({ map, position: place.geometry.location, title: place.name, animation: google.maps.Animation.DROP, icon: { url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" } });
             marker.addListener("click", () => {
-                infoWindow.setContent(`
-                    <div style="padding: 10px;">
-                        <strong>${place.name}</strong><br>
-                        ${place.formatted_address || ""}<br>
-                        Rating: ${place.rating || "N/A"} ⭐
-                    </div>
-                `);
+                infoWindow.setContent(`<div style="padding: 10px;"><strong>${place.name}</strong><br>${place.formatted_address || ""}<br>Rating: ${place.rating || "N/A"} ⭐</div>`);
                 infoWindow.open(map, marker);
             });
             markers.push(marker);
@@ -453,183 +534,81 @@
 
         function addPlaceToList(place) {
             const container = document.getElementById("tourist-spots-list");
-            const div = document.createElement("div");
-            div.className = "place-item";
-            div.innerHTML = `
-                <div class="fw-bold" style="font-size: 0.85rem;">${place.name}</div>
-                <small class="text-muted">${place.rating || "?"} ⭐</small>
-            `;
-            div.onclick = () => {
-                map.setCenter(place.geometry.location);
-                map.setZoom(16);
-                google.maps.event.trigger(markers.find(m => m.getTitle() === place.name), 'click');
-            };
+            const div = document.createElement("div"); div.className = "place-item";
+            div.innerHTML = `<div class="fw-bold" style="font-size: 0.85rem;">${place.name}</div><small class="text-muted">${place.rating || "?"} ⭐</small>`;
+            div.onclick = () => { map.setCenter(place.geometry.location); map.setZoom(16); google.maps.event.trigger(markers.find(m => m.getTitle() === place.name), 'click'); };
             container.appendChild(div);
         }
 
-        function clearMarkers() {
-            markers.forEach(m => m.setMap(null));
-            markers = [];
-        }
+        function clearMarkers() { markers.forEach(m => m.setMap(null)); markers = []; }
 
         async function fetchWeather() {
             try {
-                // Using 'Ho Chi Minh' for better compatibility
                 const response = await fetch('/api/mapapi/weather?city=Ho Chi Minh');
-                const data = await response.json();
-                const t = translations[currentLang];
-                
+                const data = await response.json(); const t = translations[currentLang];
                 if (data.main) {
                     document.getElementById("weather-content").innerHTML = `
                         <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 class="mb-0 fw-bold">${Math.round(data.main.temp)}°C</h3>
-                                <small>${data.weather[0].description}</small>
-                            </div>
+                            <div><h3 class="mb-0 fw-bold">${Math.round(data.main.temp)}°C</h3><small>${data.weather[0].description}</small></div>
                             <i class="bi bi-cloud-sun fs-1 opacity-75"></i>
                         </div>
-                        <div class="mt-2" style="font-size: 0.75rem; opacity: 0.9;">
-                            ${t.humidity}: ${data.main.humidity}% | ${t.wind}: ${data.wind.speed}m/s
-                        </div>
-                    `;
-                } else {
-                    const errMsg = data.message || (data.error ? data.error : "No data");
-                    document.getElementById("weather-content").innerText = "Weather: " + errMsg;
-                    console.error("Weather API error:", data);
+                        <div class="mt-2" style="font-size: 0.75rem; opacity: 0.9;">${t.humidity}: ${data.main.humidity}% | ${t.wind}: ${data.wind.speed}m/s</div>`;
                 }
-            } catch (e) {
-                document.getElementById("weather-content").innerText = "Service unavailable";
-                console.error("Weather fetch failed:", e);
-            }
+            } catch (e) { console.error("Weather fetch failed:", e); }
         }
 
         function toggleChat() {
-            const chatBox = document.getElementById("chat-box");
-            const toggleBtn = document.getElementById("chat-toggle");
-            if (chatBox.style.display === "none") {
-                chatBox.style.display = "flex";
-                toggleBtn.style.opacity = "0";
-                setTimeout(() => toggleBtn.style.display = "none", 300);
-            } else {
-                chatBox.style.display = "none";
-                toggleBtn.style.display = "flex";
-                setTimeout(() => toggleBtn.style.opacity = "1", 10);
-            }
+            const chatBox = document.getElementById("chat-box"), toggleBtn = document.getElementById("chat-toggle");
+            if (chatBox.style.display === "none") { chatBox.style.display = "flex"; toggleBtn.style.opacity = "0"; setTimeout(() => toggleBtn.style.display = "none", 300); }
+            else { chatBox.style.display = "none"; toggleBtn.style.display = "flex"; setTimeout(() => toggleBtn.style.opacity = "1", 10); }
         }
 
         let aiSession;
-
         (async () => {
             try {
-                if (typeof LanguageModel !== 'undefined') {
-                    aiSession = await LanguageModel.create();
-                } else if (typeof ai !== 'undefined' && ai.languageModel) {
-                    aiSession = await ai.languageModel.create();
-                } else {
-                    console.error("Local AI (LanguageModel) is not supported in this browser.");
-                }
-            } catch (e) {
-                console.error("Failed to initialize AI session:", e);
-            }
+                if (typeof LanguageModel !== 'undefined') aiSession = await LanguageModel.create();
+                else if (typeof ai !== 'undefined' && ai.languageModel) aiSession = await ai.languageModel.create();
+            } catch (e) { console.error("Failed to initialize AI session:", e); }
         })();
 
         async function sendMessage() {
-            const input = document.getElementById("chat-input");
-            const message = input.value;
+            const input = document.getElementById("chat-input"), message = input.value;
             if (!message) return;
-
-            appendMessage("user", message);
-            input.value = "";
-
-            if (!aiSession) {
-                appendMessage("ai", "Local AI session is not initialized. Please check if your browser supports Built-in AI.");
-                return;
-            }
-
-            // System instructions to handle search and map integration
-            const systemPrompt = "You are a helpful assistant for a traffic and tourism app in Ho Chi Minh City. " +
-                "1. If user asks for recommendations, provide them and end with [SEARCH:query]. " +
-                "2. If user asks to 'zoom in', 'zoom out', or 'show more area', end with [ZOOM:level] where level is a number (e.g., [ZOOM:18] for close-up, [ZOOM:12] for wide view). Current default is 15. " +
-                "3. You can combine tags, e.g., [SEARCH:park][ZOOM:16].";
-
-            const contextualMessage = currentLang === 'ja' 
-                ? `${systemPrompt}\n【日本語で回答してください】\n${message}` 
-                : `${systemPrompt}\n${message}`;
-
+            saveHistory('Chat', message); appendMessage("user", message); input.value = "";
+            if (!aiSession) { appendMessage("ai", "AI not initialized."); return; }
+            const systemPrompt = "あなたはホーチミン市1区の交通・観光アシスタントです。";
+            const contextualMessage = currentLang === 'ja' ? `${systemPrompt}\n【日本語で回答してください】\n${message}` : `${systemPrompt}\n${message}`;
             try {
                 let result = await aiSession.prompt(contextualMessage);
-                
-                // Check for zoom tag
-                const zoomMatch = result.match(/\[ZOOM:(\d+)\]/);
-                if (zoomMatch) {
-                    const zoomLevel = parseInt(zoomMatch[1]);
-                    map.setZoom(zoomLevel);
-                    result = result.replace(/\[ZOOM:\d+\]/, "").trim();
-                }
-
-                // Check for search tag
-                const searchMatch = result.match(/\[SEARCH:(.*?)\]/);
-                if (searchMatch) {
-                    const searchQuery = searchMatch[1].trim();
-                    result = result.replace(/\[SEARCH:.*?\]/, "").trim();
-                    searchTouristSpots(searchQuery);
-                }
-
+                const zoomMatch = result.match(/\[ZOOM:(\d+)\]/); if (zoomMatch) { map.setZoom(parseInt(zoomMatch[1])); result = result.replace(/\[ZOOM:\d+\]/, "").trim(); }
+                const searchMatch = result.match(/\[SEARCH:(.*?)\]/); if (searchMatch) { const q = searchMatch[1].trim(); result = result.replace(/\[SEARCH:.*?\]/, "").trim(); searchTouristSpots(q); }
                 appendMessage("ai", result);
-            } catch (e) {
-                const t = translations[currentLang];
-                appendMessage("ai", currentLang === 'ja' ? "AIの応答中にエラーが発生しました。" : "Sorry, an error occurred while processing your request.");
-                console.error("AI Prompt Error:", e);
-            }
+            } catch (e) { appendMessage("ai", "Error occurred."); }
         }
 
         function appendMessage(sender, text) {
-            const container = document.getElementById("chat-messages");
-            const msgDiv = document.createElement("div");
-            msgDiv.className = `message ${sender}`;
-            msgDiv.innerHTML = text;
-            container.appendChild(msgDiv);
-            container.scrollTop = container.scrollHeight;
+            const container = document.getElementById("chat-messages"), msgDiv = document.createElement("div");
+            msgDiv.className = `message ${sender}`; msgDiv.innerHTML = text; container.appendChild(msgDiv); container.scrollTop = container.scrollHeight;
         }
 
         function toggleRadar(show) {
-            const windyContainer = document.getElementById('windy-container');
-            const mapDiv = document.getElementById('map');
-            const legend = document.querySelector('.map-legend');
-            
-            if (show) {
-                mapDiv.style.visibility = 'hidden';
-                if (legend) legend.style.display = 'none';
-                windyContainer.style.display = 'block';
-                updateWindy();
-            } else {
-                mapDiv.style.visibility = 'visible';
-                if (legend) legend.style.display = 'flex';
-                windyContainer.style.display = 'none';
-                google.maps.event.trigger(map, 'resize');
-            }
+            const windy = document.getElementById('windy-container'), mapDiv = document.getElementById('map'), legend = document.querySelector('.map-legend');
+            if (show) { mapDiv.style.visibility = 'hidden'; if (legend) legend.style.display = 'none'; windy.style.display = 'block'; updateWindy(); }
+            else { mapDiv.style.visibility = 'visible'; if (legend) legend.style.display = 'flex'; windy.style.display = 'none'; google.maps.event.trigger(map, 'resize'); }
         }
 
         function updateWindy() {
-            const center = map.getCenter();
-            const lat = center.lat();
-            const lon = center.lng();
-            const zoom = map.getZoom();
-            const lang = currentLang === 'ja' ? 'ja' : 'en';
-            const windyIframe = document.getElementById('windy-iframe');
-            
-            // Windy embed URL with radar overlay and language support
+            const center = map.getCenter(), lat = center.lat(), lon = center.lng(), zoom = map.getZoom(), lang = currentLang === 'ja' ? 'ja' : 'en';
             const url = `https://www.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=${zoom}&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&detailLat=${lat}&detailLon=${lon}&metricWind=default&metricTemp=default&radarRange=-1&lang=${lang}`;
-            
-            // Only update if the URL actually changed to prevent flickering
-            if (windyIframe.src !== url) {
-                windyIframe.src = url;
-            }
+            if (document.getElementById('windy-iframe').src !== url) document.getElementById('windy-iframe').src = url;
         }
 
         window.onload = () => {
-            initMap();
-            fetchWeather();
+            initMap(); fetchWeather(); loadLatestHistory();
+            document.getElementById('origin-input').addEventListener('focus', () => showHistory('Route', 'origin-input'));
+            document.getElementById('destination-input').addEventListener('focus', () => showHistory('Route', 'destination-input'));
+            document.getElementById('tourist-search-input').addEventListener('focus', () => showHistory('Tourist', 'tourist-search-input'));
+            document.getElementById('chat-input').addEventListener('focus', () => showHistory('Chat', 'chat-input'));
         };
     </script>
 }

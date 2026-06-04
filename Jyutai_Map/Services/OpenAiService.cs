@@ -20,7 +20,12 @@ namespace Jyutai_Map.Services
         {
             try
             {
-                ChatCompletion completion = await _client.CompleteChatAsync(message);
+                List<ChatMessage> messages = new List<ChatMessage>
+                {
+                    new SystemChatMessage("あなたはホーチミン市1区（District 1, Ho Chi Minh City）に特化したアシスタントです。おすすめの場所や施設、情報について聞かれた際は、必ずホーチミン市1区内のものに限定して回答してください。また、利用者が他のエリアについて尋ねた場合も、1区内の関連情報を提供するように努めてください。"),
+                    new UserChatMessage(message)
+                };
+                ChatCompletion completion = await _client.CompleteChatAsync(messages);
                 return completion.Content[0].Text;
             }
             catch (Exception ex)

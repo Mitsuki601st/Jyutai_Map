@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Jyutai_Map.Services;
+using Microsoft.AspNetCore.Identity;
+using Jyutai_Map.Data;
 
 namespace Jyutai_Map
 {
@@ -11,8 +13,24 @@ namespace Jyutai_Map
 
             // Add services to the container.
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            builder.Services.AddDbContext<Jyutai_Map.Data.ApplicationDbContext>(options =>
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(connectionString));
+
+            builder.Services.AddIdentity<IdentityUser, IdentityRole>(options => {
+                options.Password.RequireDigit = false;
+                options.Password.RequiredLength = 4;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireLowercase = false;
+            })
+            .AddEntityFrameworkStores<ApplicationDbContext>();
+
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.LoginPath = "/Account/Login";
+                options.LogoutPath = "/Account/Logout";
+                options.AccessDeniedPath = "/Account/AccessDenied";
+            });
 
             builder.Services.AddHttpClient<WeatherService>();
             builder.Services.AddHttpClient<IAiService, GeminiServiceV2>();
@@ -28,6 +46,7 @@ namespace Jyutai_Map
             }
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseStaticFiles();
