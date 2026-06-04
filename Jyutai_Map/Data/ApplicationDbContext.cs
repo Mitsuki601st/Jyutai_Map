@@ -1,9 +1,10 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Jyutai_Map.Models;
 
 namespace Jyutai_Map.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -12,5 +13,6 @@ namespace Jyutai_Map.Data
 
         public DbSet<TrafficReport> TrafficReports { get; set; } = null!;
         public DbSet<TrafficSurvey> TrafficSurveys { get; set; } = null!;
+        public DbSet<SearchHistory> SearchHistories { get; set; } = null!;
     }
 }
