@@ -46,9 +46,14 @@
                         <input type="text" id="destination-input" class="form-control pe-5" data-t-placeholder="destination" placeholder="Destination">
                         <button class="btn-clear" onclick="clearInput('destination-input')" title="Clear"><i class="bi bi-x"></i></button>
                     </div>
-                    <button class="btn btn-primary-modern w-100" onclick="handleRouteButtonClick()">
-                        <i class="bi bi-search me-2"></i><span data-t="find_route">Find Route</span>
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary-modern flex-grow-1" onclick="handleRouteButtonClick()">
+                            <i class="bi bi-search me-2"></i><span data-t="find_route">Find Route</span>
+                        </button>
+                        <button id="clear-route-btn" class="btn btn-outline-danger" onclick="clearRoute()" style="display: none;" title="Clear Route">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -452,6 +457,7 @@
             directionsService.route({ origin, destination, travelMode: google.maps.TravelMode.DRIVING }, (response, status) => {
                 if (status === "OK") {
                     directionsRenderer.setDirections(response);
+                    document.getElementById('clear-route-btn').style.display = 'inline-block';
                     clearMarkers();
                     const leg = response.routes[0].legs[0];
                     const t = translations[currentLang];
@@ -495,6 +501,13 @@
                 }
                 else alert("Route calculation failed: " + status);
             });
+        }
+
+        function clearRoute() {
+            directionsRenderer.setDirections({ routes: [] });
+            clearMarkers();
+            infoWindow.close();
+            document.getElementById('clear-route-btn').style.display = 'none';
         }
 
         async function searchTouristSpots(query) {
@@ -564,26 +577,86 @@
         }
 
         let aiSession;
+
         (async () => {
             try {
-                if (typeof LanguageModel !== 'undefined') aiSession = await LanguageModel.create();
-                else if (typeof ai !== 'undefined' && ai.languageModel) aiSession = await ai.languageModel.create();
-            } catch (e) { console.error("Failed to initialize AI session:", e); }
+                const systemPrompt = "あなたはホーチミン市1区（District 1, Ho Chi Minh City）に特化したアシスタントです。\n" +
+                    "【動作指示】\n" +
+                    "1. おすすめの場所や観光スポットを聞かれた際は、必ず [SEARCH:キーワード] の形式を回答に含めてください。キーワードはGoogleマップの検索に適した単語（例：[SEARCH:Notre Dame Cathedral]）にしてください。\n" +
+                    "2. 地図の拡大を提案する場合は [ZOOM:17] のように指定してください（15〜20の範囲）。\n" +
+                    "3. 場所の提案をする際は、長文で説明せず、極めて短文で返事をするか、もしくは説明を一切せずに [SEARCH:...] コマンドのみを返してください。\n" +
+                    "4. 常に1区内の情報に限定してください。他のエリアについて聞かれても1区内の関連情報を提示してください。\n" +
+                    "5. 返答は日本語で行ってください。";
+
+                if (typeof window.ai !== 'undefined' && window.ai.languageModel) {
+                    const capabilities = await window.ai.languageModel.capabilities();
+                    if (capabilities.available !== 'no') {
+                        aiSession = await window.ai.languageModel.create({
+                            systemPrompt: systemPrompt
+                        });
+                        console.log("Local AI initialized via window.ai.languageModel");
+                    }
+                } else if (typeof LanguageModel !== 'undefined') {
+                    aiSession = await LanguageModel.create({
+                        systemPrompt: systemPrompt
+                    });
+                    console.log("Local AI initialized via LanguageModel");
+                } else {
+                    console.warn("Local AI (Built-in AI) is not supported in this browser. Falling back to Server AI.");
+                }
+            } catch (e) {
+                console.error("Failed to initialize local AI session:", e);
+            }
         })();
 
         async function sendMessage() {
             const input = document.getElementById("chat-input"), message = input.value;
             if (!message) return;
             saveHistory('Chat', message); appendMessage("user", message); input.value = "";
-            if (!aiSession) { appendMessage("ai", "AI not initialized."); return; }
-            const systemPrompt = "あなたはホーチミン市1区の交通・観光アシスタントです。";
-            const contextualMessage = currentLang === 'ja' ? `${systemPrompt}\n【日本語で回答してください】\n${message}` : `${systemPrompt}\n${message}`;
+            
             try {
-                let result = await aiSession.prompt(contextualMessage);
-                const zoomMatch = result.match(/\[ZOOM:(\d+)\]/); if (zoomMatch) { map.setZoom(parseInt(zoomMatch[1])); result = result.replace(/\[ZOOM:\d+\]/, "").trim(); }
-                const searchMatch = result.match(/\[SEARCH:(.*?)\]/); if (searchMatch) { const q = searchMatch[1].trim(); result = result.replace(/\[SEARCH:.*?\]/, "").trim(); searchTouristSpots(q); }
-                appendMessage("ai", result);
-            } catch (e) { appendMessage("ai", "Error occurred."); }
+                let result;
+                if (aiSession) {
+                    // Use Local AI
+                    result = await aiSession.prompt(message);
+                } else {
+                    // Fallback to Server AI
+                    const response = await fetch('/api/mapapi/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message })
+                    });
+                    
+                    if (!response.ok) {
+                        appendMessage("ai", "Error occurred while contacting server.");
+                        return;
+                    }
+
+                    const data = await response.json();
+                    result = data.response;
+                }
+
+                if (result) {
+                    const zoomMatch = result.match(/\[ZOOM:(\d+)\]/); 
+                    if (zoomMatch) { 
+                        map.setZoom(parseInt(zoomMatch[1])); 
+                        result = result.replace(/\[ZOOM:\d+\]/g, "").trim(); 
+                    }
+                    const searchMatch = result.match(/\[SEARCH:(.*?)\]/); 
+                    if (searchMatch) { 
+                        const q = searchMatch[1].trim(); 
+                        result = result.replace(/\[SEARCH:.*?\]/g, "").trim(); 
+                        searchTouristSpots(q); 
+                    }
+                    
+                    if (result) {
+                        appendMessage("ai", result);
+                    }
+                }
+            } catch (e) { 
+                console.error(e);
+                appendMessage("ai", "Error occurred during AI processing."); 
+            }
         }
 
         function appendMessage(sender, text) {
