@@ -180,7 +180,7 @@
                 legend_slow: "Slow",
                 legend_heavy: "Heavy",
                 gemini_assistant: "Gemini Assistant",
-                chat_welcome: "Hi! I can help with traffic updates or tourist recommendations. What's on your mind?",
+                chat_welcome: "Hi! I'm an assistant specialized in Saigon District 1. I can help with traffic updates or tourist recommendations. What's on your mind?",
                 chat_placeholder: "Type your question...",
                 humidity: "Humidity",
                 wind: "Wind",
@@ -212,7 +212,7 @@
                 legend_slow: "混雑",
                 legend_heavy: "渋滞",
                 gemini_assistant: "Gemini アシスタント",
-                chat_welcome: "こんにちは！交通情報や観光の提案など、何でも聞いてください。",
+                chat_welcome: "こんにちは！ホーチミン市1区に特化したアシスタントです。交通情報や観光の提案など、何でも聞いてください。",
                 chat_placeholder: "質問を入力してください...",
                 humidity: "湿度",
                 wind: "風速",
@@ -547,10 +547,11 @@
             }
 
             // System instructions to handle search and map integration
-            const systemPrompt = "You are a helpful assistant for a traffic and tourism app in Ho Chi Minh City. " +
-                "1. If user asks for recommendations, provide them and end with [SEARCH:query]. " +
-                "2. If user asks to 'zoom in', 'zoom out', or 'show more area', end with [ZOOM:level] where level is a number (e.g., [ZOOM:18] for close-up, [ZOOM:12] for wide view). Current default is 15. " +
-                "3. You can combine tags, e.g., [SEARCH:park][ZOOM:16].";
+            const systemPrompt = "あなたはホーチミン市1区（District 1, Ho Chi Minh City）の交通・観光アシスタントです。 " +
+                "1. おすすめの場所や情報を聞かれた際は、必ずホーチミン市1区内に限定して回答してください。 " +
+                "2. おすすめを提供する際は、最後に [SEARCH:検索クエリ] を付けてください。 " +
+                "3. ユーザーがズームイン・ズームアウト、または広いエリアを見たいと言った場合は、最後に [ZOOM:レベル] （例: 近くは [ZOOM:18]、広域は [ZOOM:12]、デフォルトは 15）を付けてください。 " +
+                "4. タグは組み合わせることができます。例: [SEARCH:park][ZOOM:16]";
 
             const contextualMessage = currentLang === 'ja' 
                 ? `${systemPrompt}\n【日本語で回答してください】\n${message}` 

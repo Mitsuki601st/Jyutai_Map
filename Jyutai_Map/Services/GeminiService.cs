@@ -28,6 +28,10 @@ namespace Jyutai_Map.Services
             
             var payload = new
             {
+                system_instruction = new
+                {
+                    parts = new[] { new { text = "あなたはホーチミン市1区（District 1, Ho Chi Minh City）に特化したアシスタントです。おすすめの場所や施設、情報について聞かれた際は、必ずホーチミン市1区内のものに限定して回答してください。また、利用者が他のエリアについて尋ねた場合も、1区内の関連情報を提供するように努めてください。" } }
+                },
                 contents = new[]
                 {
                     new { parts = new[] { new { text = message } } }
