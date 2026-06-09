@@ -20,10 +20,23 @@ namespace Jyutai_Map.Services
 
         public async Task<string> ChatAsync(string message)
         {
-            if (string.IsNullOrEmpty(_apiKey) || _apiKey == "YOUR_GEMINI_API_KEY")
-                return "Gemini APIキーが正しく設定されていません。appsettings.jsonを確認してください。";
+            var fullResponse = new StringBuilder();
+            await foreach (var chunk in StreamChatAsync(message))
+            {
+                fullResponse.Append(chunk);
+            }
+            return fullResponse.ToString();
+        }
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
+        public async IAsyncEnumerable<string> StreamChatAsync(string message)
+        {
+            if (string.IsNullOrEmpty(_apiKey) || _apiKey == "YOUR_GEMINI_API_KEY")
+            {
+                yield return "Gemini APIキーが正しく設定されていません。appsettings.jsonを確認してください。";
+                yield break;
+            }
+
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:streamGenerateContent?alt=sse&key={_apiKey}";
             
             var payload = new
             {
@@ -43,34 +56,43 @@ namespace Jyutai_Map.Services
                 }
             };
 
-            try
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            if (!response.IsSuccessStatusCode)
             {
-                var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync(url, content);
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    return $"Gemini APIエラー (Status: {response.StatusCode}): {errorContent}";
-                }
-                
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(jsonResponse);
-                
-                if (doc.RootElement.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
-                {
-                    return candidates[0]
-                        .GetProperty("content")
-                        .GetProperty("parts")[0]
-                        .GetProperty("text")
-                        .GetString() ?? "回答が空でした。";
-                }
-                
-                return "有効な回答が得られませんでした。";
+                var error = await response.Content.ReadAsStringAsync();
+                yield return $"Gemini APIエラー (Status: {response.StatusCode}): {error}";
+                yield break;
             }
-            catch (Exception ex)
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(stream);
+
+            string? line;
+            while ((line = await reader.ReadLineAsync()) != null)
             {
-                return $"通信エラーが発生しました: {ex.Message}";
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                if (line.StartsWith("data: "))
+                {
+                    var jsonData = line.Substring(6);
+                    using var doc = JsonDocument.Parse(jsonData);
+                    if (doc.RootElement.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
+                    {
+                        var text = candidates[0]
+                            .GetProperty("content")
+                            .GetProperty("parts")[0]
+                            .GetProperty("text")
+                            .GetString();
+                        
+                        if (!string.IsNullOrEmpty(text))
+                        {
+                            yield return text;
+                        }
+                    }
+                }
             }
         }
     }

@@ -68,9 +68,12 @@
                 <div class="search-box">
                     <div class="input-group mb-2 position-relative">
                         <input type="text" id="tourist-search-input" class="form-control pe-5" data-t-placeholder="search_attractions" placeholder="Search attractions (e.g. Temple)">
-                        <button class="btn-clear" style="right: 45px;" onclick="clearInput('tourist-search-input')" title="Clear"><i class="bi bi-x"></i></button>
+                        <button class="btn-clear" style="right: 85px;" onclick="clearInput('tourist-search-input')" title="Clear"><i class="bi bi-x"></i></button>
                         <button class="btn btn-outline-primary" onclick="handleTouristButtonClick()">
                             <i class="bi bi-search"></i>
+                        </button>
+                        <button id="clear-tourist-btn" class="btn btn-outline-danger ms-1" onclick="clearTouristSearch()" style="display: none;" title="Clear Markers">
+                            <i class="bi bi-trash"></i>
                         </button>
                     </div>
                     <div id="tourist-spots-list" class="mini-list mt-2">
@@ -165,6 +168,20 @@
             height: 100%;
             z-index: 1;
             background: #f8f9fa;
+        }
+
+        /* Message type styles */
+        .message.system {
+            background: rgba(0, 0, 0, 0.05);
+            color: #666;
+            font-size: 0.75rem;
+            text-align: center;
+            margin: 5px auto;
+            padding: 4px 12px;
+            border-radius: 15px;
+            width: fit-content;
+            font-style: italic;
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
 
         /* History Dropdown Styles */
@@ -510,6 +527,13 @@
             document.getElementById('clear-route-btn').style.display = 'none';
         }
 
+        function clearTouristSearch() {
+            clearMarkers();
+            infoWindow.close();
+            document.getElementById("tourist-spots-list").innerHTML = `<small class="text-muted" data-t="search_hint">${translations[currentLang].search_hint}</small>`;
+            document.getElementById('clear-tourist-btn').style.display = 'none';
+        }
+
         async function searchTouristSpots(query) {
             const searchQuery = query || document.getElementById("tourist-search-input").value;
             if (!searchQuery) return;
@@ -522,6 +546,7 @@
             placesService.textSearch(request, (results, status) => {
                 if (status === google.maps.places.PlacesServiceStatus.OK) {
                     listContainer.innerHTML = ""; const bounds = new google.maps.LatLngBounds();
+                    document.getElementById('clear-tourist-btn').style.display = 'inline-block';
                     results.slice(0, 5).forEach(place => {
                         createPlaceMarker(place); addPlaceToList(place);
                         if (place.geometry && place.geometry.location) bounds.extend(place.geometry.location);
@@ -532,7 +557,10 @@
                         hint.innerHTML = `<i class="bi bi-info-circle me-1"></i> Showing results for: <strong>${searchQuery}</strong>`;
                         listContainer.prepend(hint);
                     }
-                } else listContainer.innerHTML = `<small class="text-danger">${t.no_results}</small>`;
+                } else {
+                    listContainer.innerHTML = `<small class="text-danger">${t.no_results}</small>`;
+                    document.getElementById('clear-tourist-btn').style.display = 'none';
+                }
             });
         }
 
@@ -572,21 +600,31 @@
 
         function toggleChat() {
             const chatBox = document.getElementById("chat-box"), toggleBtn = document.getElementById("chat-toggle");
-            if (chatBox.style.display === "none") { chatBox.style.display = "flex"; toggleBtn.style.opacity = "0"; setTimeout(() => toggleBtn.style.display = "none", 300); }
-            else { chatBox.style.display = "none"; toggleBtn.style.display = "flex"; setTimeout(() => toggleBtn.style.opacity = "1", 10); }
+            if (chatBox.style.display === "none") {
+                chatBox.style.display = "flex";
+                toggleBtn.style.display = "none";
+            } else {
+                chatBox.style.display = "none";
+                toggleBtn.style.display = "flex";
+                toggleBtn.style.opacity = "1";
+            }
         }
 
         let aiSession;
 
         (async () => {
             try {
-                const systemPrompt = "あなたはホーチミン市1区（District 1, Ho Chi Minh City）に特化したアシスタントです。\n" +
-                    "【動作指示】\n" +
-                    "1. おすすめの場所や観光スポットを聞かれた際は、必ず [SEARCH:キーワード] の形式を回答に含めてください。キーワードはGoogleマップの検索に適した単語（例：[SEARCH:Notre Dame Cathedral]）にしてください。\n" +
-                    "2. 地図の拡大を提案する場合は [ZOOM:17] のように指定してください（15〜20の範囲）。\n" +
-                    "3. 場所の提案をする際は、長文で説明せず、極めて短文で返事をするか、もしくは説明を一切せずに [SEARCH:...] コマンドのみを返してください。\n" +
-                    "4. 常に1区内の情報に限定してください。他のエリアについて聞かれても1区内の関連情報を提示してください。\n" +
-                    "5. 返答は日本語で行ってください。";
+                const systemPrompt = "あなたはベトナム・ホーチミン市1区（District 1, Ho Chi Minh City）の専属観光・交通ガイドです。\n\n" +
+                    "【基本原則】\n" +
+                    "1. ホーチミン市1区以外の情報については一切回答しないでください。他のエリアについて聞かれた場合は「私は1区のガイドですので、1区内の関連情報をご紹介します」と断った上で、1区内の情報を提示してください。\n" +
+                    "2. 回答は簡潔に日本語で行ってください。\n\n" +
+                    "【コマンド同期指示】\n" +
+                    "回答の中に、以下の形式でアプリの機能を呼び出すコマンドを「必ず」含めてください。特に飲食店や施設名を挙げた場合は、その直後に必ずSEARCHコマンドを記述してください。\n" +
+                    "・[SEARCH:キーワード] - 観光スポット、飲食店（レストラン、すし屋、カフェ）、施設などを検索する際に使用（例：[SEARCH:Sushi Rei Ho Chi Minh]）\n" +
+                    "・[ROUTE:出発地|目的地] - ルート検索を行う際に使用。地名は具体的かつ英語名も含めると精度が上がります（例：[ROUTE:Saigon Opera House|Bitexco Financial Tower]）\n" +
+                    "・[ZOOM:レベル] - 地図のズームを変更する際に使用（レベルは15〜18）。特定の場所を紹介する直前に使用してください。\n\n" +
+                    "【重要】\n" +
+                    "場所を提案する際は、説明の文末に必ず [SEARCH:場所名] を入れてください。これがないと地図に表示されません。";
 
                 if (typeof window.ai !== 'undefined' && window.ai.languageModel) {
                     const capabilities = await window.ai.languageModel.capabilities();
@@ -610,52 +648,118 @@
         })();
 
         async function sendMessage() {
+            console.log("sendMessage: Starting execution");
             const input = document.getElementById("chat-input"), message = input.value;
             if (!message) return;
             saveHistory('Chat', message); appendMessage("user", message); input.value = "";
             
+            const container = document.getElementById("chat-messages");
+            const loadingDiv = document.createElement("div");
+            loadingDiv.className = "message ai";
+            loadingDiv.innerHTML = "Thinking...";
+            container.appendChild(loadingDiv);
+            container.scrollTop = container.scrollHeight;
+
             try {
-                let result;
+                let fullResult = "";
+
                 if (aiSession) {
-                    // Use Local AI
-                    result = await aiSession.prompt(message);
+                    console.log("sendMessage: aiSession is active, attempting local processing");
+                    try {
+                        const timeoutPromise = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error("Local AI Timeout")), 60000)
+                        );
+
+                        const processPromise = (async () => {
+                            if (aiSession.promptStreaming) {
+                                console.log("sendMessage: Using promptStreaming");
+                                const stream = aiSession.promptStreaming(message);
+                                for await (const chunk of stream) {
+                                    // Handle cumulative chunks (standard for window.ai)
+                                    if (chunk.length >= fullResult.length) {
+                                        fullResult = chunk;
+                                    } else {
+                                        fullResult += chunk;
+                                    }
+                                    
+                                    // Update UI in real-time
+                                    const displayContent = fullResult.replace(/\[ZOOM:.*?\]/g, "")
+                                                                    .replace(/\[ROUTE:.*?\]/g, "")
+                                                                    .replace(/\[SEARCH:.*?\]/g, "")
+                                                                    .trim();
+                                    if (displayContent) {
+                                        loadingDiv.innerHTML = displayContent;
+                                        container.scrollTop = container.scrollHeight;
+                                    }
+                                }
+                            } else if (aiSession.prompt) {
+                                console.log("sendMessage: Using prompt (non-streaming)");
+                                fullResult = await aiSession.prompt(message);
+                                loadingDiv.innerHTML = fullResult.replace(/\[ZOOM:.*?\]/g, "")
+                                                                .replace(/\[ROUTE:.*?\]/g, "")
+                                                                .replace(/\[SEARCH:.*?\]/g, "")
+                                                                .trim();
+                            }
+                            return fullResult;
+                        })();
+
+                        fullResult = await Promise.race([processPromise, timeoutPromise]);
+                        
+                        if (!fullResult) throw new Error("Local AI returned empty result");
+
+                        // Final UI update and command processing
+                        loadingDiv.innerHTML = fullResult.replace(/\[ZOOM:.*?\]/g, "")
+                                                        .replace(/\[ROUTE:.*?\]/g, "")
+                                                        .replace(/\[SEARCH:.*?\]/g, "")
+                                                        .trim();
+                        processCommands(fullResult);
+                    } catch (localError) {
+                        console.error("sendMessage: Local AI error:", localError);
+                        if (localError.message === "Local AI Timeout") {
+                            loadingDiv.innerHTML = "ブラウザ内蔵AIの応答が制限時間を超えました。PCの負荷が高いか、モデルの準備ができていない可能性があります。";
+                        } else {
+                            loadingDiv.innerHTML = "ブラウザ内蔵AIでエラーが発生しました。";
+                        }
+                    }
                 } else {
-                    // Fallback to Server AI
-                    const response = await fetch('/api/mapapi/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message })
-                    });
-                    
-                    if (!response.ok) {
-                        appendMessage("ai", "Error occurred while contacting server.");
-                        return;
-                    }
-
-                    const data = await response.json();
-                    result = data.response;
-                }
-
-                if (result) {
-                    const zoomMatch = result.match(/\[ZOOM:(\d+)\]/); 
-                    if (zoomMatch) { 
-                        map.setZoom(parseInt(zoomMatch[1])); 
-                        result = result.replace(/\[ZOOM:\d+\]/g, "").trim(); 
-                    }
-                    const searchMatch = result.match(/\[SEARCH:(.*?)\]/); 
-                    if (searchMatch) { 
-                        const q = searchMatch[1].trim(); 
-                        result = result.replace(/\[SEARCH:.*?\]/g, "").trim(); 
-                        searchTouristSpots(q); 
-                    }
-                    
-                    if (result) {
-                        appendMessage("ai", result);
-                    }
+                    loadingDiv.innerHTML = "このブラウザでは組み込みAI（window.ai）が有効になっていません。";
                 }
             } catch (e) { 
-                console.error(e);
-                appendMessage("ai", "Error occurred during AI processing."); 
+                console.error("sendMessage: Critical error:", e);
+                loadingDiv.innerHTML = "処理中にエラーが発生しました。"; 
+            } finally {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        function processCommands(result) {
+            if (result) {
+                // Handle ZOOM commands
+                const zoomMatches = [...result.matchAll(/\[ZOOM:\s*(\d+)\s*\]/g)];
+                zoomMatches.forEach(match => {
+                    const zoomLevel = parseInt(match[1]);
+                    map.setZoom(zoomLevel);
+                    appendMessage("system", `<i class="bi bi-zoom-in"></i> Map zoomed to level ${zoomLevel}`);
+                });
+
+                // Handle ROUTE commands
+                const routeMatches = [...result.matchAll(/\[ROUTE:\s*(.*?)\s*\|\s*(.*?)\s*\]/g)];
+                routeMatches.forEach(match => {
+                    const origin = match[1].trim();
+                    const dest = match[2].trim();
+                    document.getElementById('origin-input').value = origin;
+                    document.getElementById('destination-input').value = dest;
+                    calculateRoute();
+                    appendMessage("system", `<i class="bi bi-signpost-split"></i> Routing from ${origin} to ${dest}`);
+                });
+
+                // Handle SEARCH commands
+                const searchMatches = [...result.matchAll(/\[SEARCH:\s*(.*?)\s*\]/g)];
+                searchMatches.forEach(match => {
+                    const q = match[1].trim();
+                    searchTouristSpots(q);
+                    appendMessage("system", `<i class="bi bi-search"></i> Searching for: ${q}`);
+                });
             }
         }
 

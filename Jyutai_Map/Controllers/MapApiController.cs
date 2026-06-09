@@ -4,6 +4,8 @@ using Jyutai_Map.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text;
 
 namespace Jyutai_Map.Controllers
 {
@@ -37,6 +39,21 @@ namespace Jyutai_Map.Controllers
 
             var response = await _aiService.ChatAsync(request.Message);
             return Ok(new { response });
+        }
+
+        [HttpGet("chat-stream")]
+        public async Task ChatStream(string message)
+        {
+            Response.ContentType = "text/event-stream";
+            var responseStream = Response.Body;
+
+            await foreach (var chunk in _aiService.StreamChatAsync(message))
+            {
+                var data = $"data: {JsonSerializer.Serialize(new { text = chunk })}\n\n";
+                var bytes = Encoding.UTF8.GetBytes(data);
+                await responseStream.WriteAsync(bytes, 0, bytes.Length);
+                await responseStream.FlushAsync();
+            }
         }
 
         [HttpGet("history")]
